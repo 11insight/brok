@@ -1,0 +1,22 @@
+/* Locked before component CSS.
+   One accent. Inter only. Glass on the ticker and pane headers. No gradients. */
+
+:root {
+  color-scheme: dark;
+  --bg: #0c0c0e;
+  --bg-raise: #141416;
+  --ink: #eceae6;
+  --ink-dim: #9c978f;
+  --ink-faint: #6f6b64;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --accent: #c4622d;
+  --accent-dim: rgba(196, 98, 45, 0.18);
+  --glass: rgba(18, 18, 20, 0.72);
+  --glass-line: rgba(255, 255, 255, 0.08);
+  --sheen: rgba(255, 255, 255, 0.08);
+  --font: "Inter", Arial, sans-serif;
+  --chrome-h: 88px;
+  --split-ms: 640ms;
+  --ease: cubic-bezier(0.16, 0.84, 0.2, 1);
+}

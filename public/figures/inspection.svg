@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420">
+  <rect width="800" height="420" fill="#141416"/>
+  <rect x="40" y="36" width="720" height="348" fill="none" stroke="#c4622d" stroke-width="1"/>
+  <text x="56" y="68" fill="#eceae6" font-family="Arial, sans-serif" font-size="16">Pier 4 · 14 stations</text>
+  <text x="56" y="92" fill="#9c978f" font-family="Arial, sans-serif" font-size="13">Fixture figure</text>
+  <g fill="none" stroke="#9c978f" stroke-width="1">
+    <path d="M56 150h688"/>
+    <path d="M56 230h688"/>
+    <path d="M56 310h688"/>
+  </g>
+  <g fill="#c4622d">
+    <circle cx="96" cy="150" r="3"/>
+    <circle cx="176" cy="150" r="3"/>
+    <circle cx="256" cy="150" r="3"/>
+    <circle cx="336" cy="150" r="3"/>
+    <circle cx="416" cy="150" r="3"/>
+    <circle cx="496" cy="230" r="3"/>
+    <circle cx="576" cy="230" r="3"/>
+    <circle cx="656" cy="230" r="3"/>
+    <circle cx="136" cy="310" r="3"/>
+    <circle cx="216" cy="310" r="3"/>
+    <circle cx="296" cy="310" r="3"/>
+    <circle cx="376" cy="310" r="3"/>
+    <circle cx="456" cy="310" r="3"/>
+    <circle cx="536" cy="310" r="3"/>
+  </g>
+</svg>
