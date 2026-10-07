@@ -1,6 +1,7 @@
 import { accountLayers } from "../fixtures/accounts.js";
 import { filteredCommands } from "./commands.js";
 import { esc, externalLink } from "./dom.js";
+import { grokMark, xMark } from "./official-marks.js";
 
 const FILTERS = [
   ["all", "All"],
@@ -60,14 +61,31 @@ function labelFor(klass) {
   return klass;
 }
 
+const officialButtons = {
+  grok: { label: "Sign into Grok", mark: grokMark },
+  x: { label: "Login with 𝕏", mark: xMark },
+};
+
+function accountControl(layer, on) {
+  const official = officialButtons[layer.id];
+  if (!official) {
+    return `<button type="button" data-action="toggle-account" data-account="${esc(layer.id)}" aria-pressed="${on}">
+          ${esc(layer.name)} · ${on ? "On" : "Off"}
+        </button>`;
+  }
+  return `<button type="button" class="official" data-action="toggle-account" data-account="${esc(layer.id)}" aria-pressed="${on}">
+          ${official.mark}
+          <span>${esc(official.label)}</span>
+        </button>
+        <p class="account-state" data-on="${on}">${on ? "On" : "Off"}</p>`;
+}
+
 export function signinHtml(accounts) {
   const rows = accountLayers
     .map((layer) => {
       const on = Boolean(accounts[layer.id]);
       return `<div class="account">
-        <button type="button" data-action="toggle-account" data-account="${esc(layer.id)}" aria-pressed="${on}">
-          ${esc(layer.name)} · ${on ? "On" : "Off"}
-        </button>
+        ${accountControl(layer, on)}
         <p>${esc(layer.unlocks)}</p>
       </div>`;
     })
