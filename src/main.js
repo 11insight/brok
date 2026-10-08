@@ -6,6 +6,7 @@ import "./styles/tokens.css";
 import "./styles/app.css";
 
 import { posts } from "./fixtures/cites.js";
+import { applyAccent, readAccent } from "./sidecar/accent.js";
 import { emptyArticle, loadArticle, splitArticle } from "./sidecar/article.js";
 import { createLedger } from "./sidecar/ledger.js";
 import { readSplit, writeSplit } from "./sidecar/split-memory.js";
@@ -26,6 +27,8 @@ const state = {
   ledgerOpen: false,
   signinOpen: false,
   securityOpen: false,
+  settingsOpen: false,
+  accent: applyAccent(readAccent()),
   shelfOpen: false,
   pendingSend: false,
   sendResult: "",
@@ -85,6 +88,7 @@ function closeOverlays() {
   state.ledgerOpen = false;
   state.signinOpen = false;
   state.securityOpen = false;
+  state.settingsOpen = false;
   state.shelfOpen = false;
   state.commandOpen = false;
   state.commandStage = "list";
@@ -121,6 +125,7 @@ function go(route) {
   state.ledgerOpen = false;
   state.signinOpen = false;
   state.securityOpen = false;
+  state.settingsOpen = false;
   state.shelfOpen = false;
   state.commandOpen = false;
   state.commandStage = "list";
@@ -251,6 +256,7 @@ function toggleCommand() {
   state.ledgerOpen = false;
   state.signinOpen = false;
   state.securityOpen = false;
+  state.settingsOpen = false;
   state.shelfOpen = false;
   state.commandOpen = true;
   state.commandStage = "list";
@@ -376,6 +382,18 @@ app.addEventListener("click", (event) => {
     sync();
     return;
   }
+  if (action === "open-settings") {
+    const next = !state.settingsOpen;
+    closeOverlays();
+    state.settingsOpen = next;
+    sync();
+    return;
+  }
+  if (action === "set-accent") {
+    state.accent = applyAccent(target.dataset.accent);
+    sync();
+    return;
+  }
   if (action === "open-command") {
     toggleCommand();
     return;
@@ -404,6 +422,7 @@ app.addEventListener("click", (event) => {
   if (action === "confirm-send") {
     state.pendingSend = false;
     state.securityOpen = false;
+  state.settingsOpen = false;
     if (state.route === "original") go("browser");
     if (!state.split) setSplit(true);
     runSplit();

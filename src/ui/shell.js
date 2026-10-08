@@ -2,8 +2,8 @@ import { starlinkFixture } from "../fixtures/accounts.js";
 import { quotesFor } from "../fixtures/ticker.js";
 import { columnsHtml, fillPosts, originalHtml, railHtml, singleHtml } from "./article-html.js";
 import { esc } from "./dom.js";
-import { arrowIcon, brandMark, searchIcon } from "./icons.js";
-import { blockedCount, commandHtml, drawerHtml, securityHtml, shelfHtml, signinHtml } from "./overlays.js";
+import { arrowIcon, brandMark, gearIcon, searchIcon } from "./icons.js";
+import { blockedCount, commandHtml, drawerHtml, securityHtml, settingsHtml, shelfHtml, signinHtml } from "./overlays.js";
 
 function resultsHtml(search) {
   if (!search || search.status === "idle") return "";
@@ -66,7 +66,7 @@ export function shellHtml(article) {
           <button type="button" class="tool" data-action="open-ledger"><span class="count" data-blocked>0</span><span class="tool-word">Blocked</span></button>
           <button type="button" class="tool" data-action="open-signin">Sign in</button>
           <button type="button" class="tool" data-action="go" data-route="wallet">Wallet</button>
-          <button type="button" class="tool kbd" data-action="open-command" aria-label="Commands"><kbd>⌘K</kbd></button>
+          <button type="button" class="tool gear" data-action="open-settings" aria-label="Settings">${gearIcon}</button>
         </nav>
       </div>
     </div>
@@ -98,6 +98,7 @@ export function shellHtml(article) {
     <div class="popover" id="signin" hidden></div>
     <div class="popover" id="security" hidden></div>
     <div class="popover" id="shelf" hidden></div>
+    <div class="popover" id="settings" hidden></div>
     <div id="command"></div>
   </div>`;
 }
@@ -154,6 +155,9 @@ export function syncShell(root, state, rows) {
   const security = win.querySelector("#security");
   security.hidden = !state.securityOpen;
   if (state.securityOpen) security.innerHTML = securityHtml(state);
+  const settings = win.querySelector("#settings");
+  settings.hidden = !state.settingsOpen;
+  if (state.settingsOpen) settings.innerHTML = settingsHtml(state);
   const shelf = win.querySelector("#shelf");
   shelf.hidden = !state.shelfOpen;
   if (state.shelfOpen) shelf.innerHTML = shelfHtml(state.article);

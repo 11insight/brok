@@ -2,7 +2,8 @@ import { accountLayers } from "../fixtures/accounts.js";
 import { filteredCommands } from "./commands.js";
 import { esc, externalLink } from "./dom.js";
 import { grokMark, xMark } from "./official-marks.js";
-import { closeIcon } from "./icons.js";
+import { closeIcon, LOGO_INNER } from "./icons.js";
+import { ACCENTS } from "../sidecar/accent.js";
 
 function head(title, meta = "") {
   const sub = meta ? `<p class="pop-meta">${esc(meta)}</p>` : "";
@@ -148,6 +149,19 @@ export function commandHtml(state) {
       <input id="cmd-q" type="text" placeholder="Type a command" value="${esc(state.commandQuery)}" autocomplete="off" spellcheck="false" aria-label="Filter commands" />
       <div class="cmd-list" role="listbox">${items}</div>
     </div>`;
+}
+
+export function settingsHtml(state) {
+  const swatches = ACCENTS.map(
+    (accent) => `<button type="button" class="swatch${state.accent === accent.id ? " is-on" : ""}" data-action="set-accent" data-accent="${esc(accent.id)}" aria-pressed="${state.accent === accent.id}" style="--swatch: ${esc(accent.color)}">
+        <svg viewBox="0 0 32 32" aria-hidden="true">${LOGO_INNER.replaceAll("brok-cut", `cut-${accent.id}`)}</svg>
+        <span>${esc(accent.label)}</span>
+      </button>`,
+  ).join("");
+  return `${head("Settings")}
+    <p class="eyebrow">Color</p>
+    <div class="swatches">${swatches}</div>
+    <button type="button" class="btn" data-action="open-command">Commands <kbd>⌘K</kbd></button>`;
 }
 
 export function blockedCount(rows) {

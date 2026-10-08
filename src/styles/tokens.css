@@ -85,3 +85,19 @@
   --split-ms: 640ms;
   --ease: cubic-bezier(0.16, 0.84, 0.2, 1);
 }
+
+/* The accent follows the logo color picked in Settings. */
+:root[data-accent="orange"] {
+  --indigo: #d9611c;
+  --indigo-lt: #f0a06e;
+  --indigo-dk: #6e2c06;
+  --indigo-rgb: 217, 97, 28;
+  --indigo-dk-rgb: 110, 44, 6;
+}
+:root[data-accent="blue"] {
+  --indigo: #3fb5fc;
+  --indigo-lt: #9ad8fe;
+  --indigo-dk: #12527a;
+  --indigo-rgb: 63, 181, 252;
+  --indigo-dk-rgb: 18, 82, 122;
+}
