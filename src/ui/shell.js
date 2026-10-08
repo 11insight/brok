@@ -77,7 +77,7 @@ export function shellHtml(article) {
         <form class="search" id="search">
           <label for="q">Search</label>
           <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="What do you want to know?" />
-          <p class="fine">A search sends the query to DuckDuckGo. No account is sent.</p>
+          <p class="fine">A search sends the query to Bing. No account is sent.</p>
           <div class="results" id="results" hidden></div>
         </form>
         <div class="single" id="single"></div>

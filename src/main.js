@@ -431,7 +431,7 @@ async function runSearch(query) {
     id: `search-${token}`,
     klass: "medium",
     kind: "Web search",
-    host: "duckduckgo.com",
+    host: "bing.com",
     result: "allowed",
     detail: failed
       ? `Query sent. Results did not come back. "${query.slice(0, 80)}"`

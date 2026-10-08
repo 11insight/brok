@@ -1,4 +1,4 @@
-const ENDPOINT = "https://html.duckduckgo.com/html/";
+const ENDPOINT = "https://www.bing.com/search";
 const LIMIT = 8;
 
 function fail(status, message) {
@@ -9,6 +9,8 @@ function fail(status, message) {
 
 function decode(value) {
   return value
+    .replace(/^<!\[CDATA\[/, "")
+    .replace(/\]\]>$/, "")
     .replace(/<[^>]+>/g, "")
     .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
     .replace(/&#(\d+);/g, (_, num) => String.fromCodePoint(Number(num)))
@@ -23,25 +25,28 @@ function decode(value) {
 
 function cleanUrl(href) {
   try {
-    const url = new URL(href, "https://duckduckgo.com");
-    const wrapped = url.searchParams.get("uddg");
-    const target = wrapped ? new URL(wrapped) : url;
+    const target = new URL(href);
     if (target.protocol !== "https:" && target.protocol !== "http:") return "";
-    if (target.hostname.endsWith("duckduckgo.com")) return "";
+    if (target.hostname === "bing.com" || target.hostname.endsWith(".bing.com")) return "";
     return target.href;
   } catch {
     return "";
   }
 }
 
-function parseResults(html) {
+function tag(block, name) {
+  const match = block.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`, "i"));
+  return match ? match[1].trim() : "";
+}
+
+function parseRss(xml) {
   const results = [];
   const seen = new Set();
-  const pattern = /<a rel="nofollow" class="result__a" href="([^"]+)">([\s\S]*?)<\/a>[\s\S]*?<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-  for (const match of html.matchAll(pattern)) {
-    const url = cleanUrl(decode(match[1]));
-    const title = decode(match[2]);
-    const snippet = decode(match[3]);
+  for (const match of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const block = match[1];
+    const url = cleanUrl(decode(tag(block, "link")));
+    const title = decode(tag(block, "title"));
+    const snippet = decode(tag(block, "description"));
     if (!url || !title || seen.has(url)) continue;
     seen.add(url);
     results.push({ title, url, snippet });
@@ -51,21 +56,27 @@ function parseResults(html) {
 }
 
 export async function searchWeb(raw) {
-  const query = String(raw || "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 240);
+  const query = String(raw || "")
+    .replace(/[\u0000-\u001f]/g, " ")
+    .trim()
+    .slice(0, 240);
   if (!query) throw fail(400, "Type a search.");
-  const response = await fetch(ENDPOINT, {
-    method: "POST",
+  const url = new URL(ENDPOINT);
+  url.searchParams.set("q", query);
+  url.searchParams.set("format", "rss");
+  url.searchParams.set("count", String(LIMIT));
+  const response = await fetch(url, {
     headers: {
-      "content-type": "application/x-www-form-urlencoded",
-      accept: "text/html",
+      accept: "application/rss+xml, application/xml, text/xml",
       "user-agent": "Mozilla/5.0",
     },
-    body: `q=${encodeURIComponent(query)}`,
     signal: AbortSignal.timeout(8000),
     redirect: "follow",
   });
   if (!response.ok) throw fail(502, "Search failed.");
-  const html = await response.text();
-  if (!html.includes("result__a")) throw fail(502, "Search failed.");
-  return { query, source: "duckduckgo.com", results: parseResults(html) };
+  const xml = await response.text();
+  if (!xml.includes("<item>")) throw fail(502, "Search failed.");
+  const results = parseRss(xml);
+  if (!results.length) throw fail(502, "Search failed.");
+  return { query, source: "bing.com", results };
 }
