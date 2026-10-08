@@ -85,7 +85,6 @@ export function shellHtml(article) {
             <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="What do you want to know?" />
             <button type="submit" class="go" aria-label="Search">${arrowIcon}</button>
           </div>
-          <p class="fine">Searches go to Bing. Your accounts stay here.</p>
           <div class="results" id="results" hidden></div>
         </form>
         <div class="single" id="single"></div>
