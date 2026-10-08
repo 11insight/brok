@@ -54,32 +54,30 @@ function paint() {
         .join("")}</ul>`
     : "";
   host.innerHTML = `<div class="wallet">
-    <p class="wallet-banner">Testnet fixture. This screen cannot sign, and it cannot store a seed.</p>
     <div class="wallet-top">
-      <button type="button" data-action="go" data-route="browser">Back to the page</button>
-      <p class="kicker">Extension surface</p>
+      <button type="button" data-action="go" data-route="browser">Back</button>
+      <p class="kicker">Testnet fixture</p>
     </div>
-    <h1>Wallet</h1>
     <section class="pause" aria-labelledby="pause-title">
       <p class="eyebrow">Paused</p>
-      <div class="tx-switch">${choices}</div>
-      <h2 id="pause-title">${esc(tx.reasonTitle)}</h2>
+      <h1 id="pause-title">${esc(tx.reasonTitle)}</h1>
       <p class="reason">${esc(tx.reason)}</p>
+      <div class="tx-switch">${choices}</div>
       <dl class="facts">
         <div><dt>Token</dt><dd>${esc(tx.token)}</dd></div>
         <div><dt>Amount</dt><dd>${esc(tx.amount)}</dd></div>
         <div><dt>Contract</dt><dd>${esc(tx.contract)}</dd></div>
         <div><dt>Destination</dt><dd>${esc(tx.destination)}</dd></div>
       </dl>
-      <p class="fine">Inference. A false positive can cost real money, so this is not a silent block. Cancel is the default.</p>
       <div class="pause-actions">
         <button type="button" class="stop" data-action="wallet-cancel">Cancel</button>
         <button type="button" class="go-on" data-action="wallet-continue">Continue anyway</button>
       </div>
+      <p class="fine">Inference. A false positive can cost real money, so this is not a silent block. Cancel is the default.</p>
       ${log}
     </section>
     ${phraseBlock()}
-    <p class="fine">This screen warns. It does not editorialize.</p>
+    <p class="fine wallet-foot">This screen cannot sign, and it cannot store a seed.</p>
   </div>`;
 }
 
