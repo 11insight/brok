@@ -2,11 +2,11 @@
 
 :root {
   color-scheme: dark;
-  --bg: #0c0c0e;
+  --bg: #000;
   --bg-raise: #141416;
-  --ink: #eceae6;
-  --ink-dim: #9c978f;
-  --ink-faint: #6f6b64;
+  --ink: #fff;
+  --ink-dim: rgba(235, 235, 245, 0.62);
+  --ink-faint: rgba(235, 235, 245, 0.3);
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.14);
   --accent: #c4622d;
@@ -16,7 +16,7 @@
   --edge-low: rgba(255, 255, 255, 0.08);
   --glass-shadow: inset 0 1px 0 var(--edge), inset 0 -1px 1px var(--edge-low);
   --font: "Inter", Arial, sans-serif;
-  --chrome-h: 88px;
+  --chrome-h: 64px;
   --split-ms: 640ms;
   --ease: cubic-bezier(0.16, 0.84, 0.2, 1);
 }

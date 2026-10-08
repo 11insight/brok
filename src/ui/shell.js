@@ -1,46 +1,37 @@
 import { starlinkFixture } from "../fixtures/accounts.js";
-import { quotesFor, people } from "../fixtures/ticker.js";
+import { quotesFor } from "../fixtures/ticker.js";
 import { columnsHtml, fillPosts, originalHtml, railHtml, singleHtml } from "./article-html.js";
 import { esc } from "./dom.js";
 import { blockedCount, commandHtml, drawerHtml, securityHtml, shelfHtml, signinHtml } from "./overlays.js";
 
 export function shellHtml(article) {
-  const ticks = people
-    .map((person) => {
-      const label = `${person.name} posted`;
-      return `<a class="tick" href="${esc(person.href)}" target="_blank" rel="noreferrer" title="Opens in X, not in BROK." aria-label="${esc(label)}. Opens in X, not in BROK."><span class="avatar" aria-hidden="true">${esc(person.mark)}</span><span>${esc(label)}</span></a>`;
-    })
-    .join("");
   const stocks = quotesFor(article)
     .map((quote) => {
-      const pin = quote.pinned ? `<span class="pin">Pinned</span>` : "";
       const why = quote.pinned ? `Pinned because this article names ${article.company.name}. ` : "";
       return `<span class="quote" title="${esc(`${why}Fixture quote. Not a live price. Not polled.`)}">
         <span class="sym">${esc(quote.symbol)}</span>
         <span>${esc(quote.price)}</span>
         <span class="chg">${esc(quote.change)}</span>
-        ${pin}
       </span>`;
     })
     .join("");
   return `<div class="window" data-route="browser">
     <div class="chrome">
-      <header class="ticker">
-        <div class="people">${ticks}</div>
-        <span class="div" aria-hidden="true"></span>
-        <div class="stocks">${stocks}</div>
-        <span class="fixture-mark">Fixture</span>
-      </header>
       <div class="toolbar">
         <button type="button" class="hamburger" data-action="toggle-split" aria-pressed="false" aria-label="Split into three panes">
           <span class="hb" aria-hidden="true"><i></i><i></i><i></i></span>
         </button>
         <p class="omnibox">${esc(article.url)}</p>
-        <button type="button" class="tool" data-action="open-ledger"><span data-blocked>0</span> blocked</button>
-        <button type="button" class="tool" data-action="open-signin">Sign in</button>
-        <button type="button" class="tool" data-action="go" data-route="wallet">Wallet</button>
-        <button type="button" class="tool kbd" data-action="open-command">⌘K</button>
+        <div class="tools">
+          <button type="button" class="tool" data-action="open-ledger"><span data-blocked>0</span> blocked</button>
+          <button type="button" class="tool" data-action="open-signin">Sign in</button>
+          <button type="button" class="tool" data-action="go" data-route="wallet">Wallet</button>
+          <button type="button" class="tool kbd" data-action="open-command">⌘K</button>
+        </div>
       </div>
+    </div>
+    <div class="meta">
+      <div class="stocks">${stocks}</div>
       <p class="strip" id="starlink" hidden></p>
       <p class="strip" id="quiet">Cite rail quiet. No X account. Posts are not invented.</p>
     </div>
@@ -87,10 +78,10 @@ export function syncShell(root, state, rows) {
   } else {
     star.hidden = true;
   }
-  const quiet = win.querySelector("#quiet");
-  quiet.hidden = state.accounts.x;
-  const rail = win.querySelector("#rail");
   const closing = win.classList.contains("is-closing");
+  const quiet = win.querySelector("#quiet");
+  quiet.hidden = state.accounts.x || state.split || closing;
+  const rail = win.querySelector("#rail");
   rail.hidden = !state.accounts.x || state.split || closing || state.route === "original";
   const inference = win.querySelector("#inference");
   if (inference) {

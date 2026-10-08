@@ -1,9 +1,3 @@
-export const people = [
-  { name: "Elon", href: "https://x.com/elonmusk", mark: "E" },
-  { name: "SpaceX", href: "https://x.com/SpaceX", mark: "X" },
-  { name: "Starlink", href: "https://x.com/Starlink", mark: "S" },
-];
-
 export const quotes = [
   { symbol: "NSPN", name: "Northspan", price: "18.40", change: "+0.30" },
   { symbol: "HBR", name: "Harbor Board", price: "6.10", change: "−0.05" },

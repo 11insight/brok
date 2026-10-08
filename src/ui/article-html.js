@@ -4,12 +4,12 @@ import { againstPage, formatWhen } from "./format.js";
 import { esc } from "./dom.js";
 
 function figureHtml(figure) {
+  const flagClass = figure.flag === "Unsourced" ? "flag flag-unsourced" : "flag";
   return `<figure class="figure">
     <img src="${esc(figure.src)}" alt="${esc(figure.alt)}" width="800" height="420" />
     <figcaption>
-      <span class="flag">${esc(figure.flag)}</span>
+      <span class="${flagClass}">${esc(figure.flag)}</span>
       ${esc(figure.caption)}
-      <span class="proxy">Fixture figure, standing in for the original image. Logged as an image proxy.</span>
     </figcaption>
   </figure>`;
 }
@@ -35,7 +35,7 @@ export function singleHtml(article) {
     </div>
     <h1>${esc(article.title)}</h1>
     ${body}
-    <p class="legend">Underline means unverified by this pass. It does not mean false.</p>
+    <p class="legend">Underline means unverified by this pass. It does not mean false. Figures stand in for the original images.</p>
   </article>`;
 }
 
@@ -74,7 +74,7 @@ function blocksHtml(list, pageIso) {
 }
 
 export function postsRegion(posts, pageIso, xOn) {
-  if (!xOn) return `<p class="empty">No X account. Citing posts stay hidden.</p>`;
+  if (!xOn || !posts.length) return "";
   return blocksHtml(posts, pageIso);
 }
 
@@ -159,7 +159,7 @@ export function fillPosts(root, posts, pageIso, xOn) {
 export function railHtml(posts, pageIso) {
   return `<header class="rail-head">
       <h2>Posts citing this URL</h2>
-      <p>Fixture posts. Newest first. Post text only. No For You rank. Handles are not links.</p>
+      <p>None loaded. This screen does not invent posts.</p>
     </header>
     <div class="rail-body">${blocksHtml(posts, pageIso)}</div>`;
 }

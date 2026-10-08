@@ -1,9 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420">
-  <rect width="800" height="420" fill="#141416"/>
-  <rect x="40" y="36" width="348" height="348" fill="none" stroke="#9c978f" stroke-width="1"/>
-  <rect x="412" y="36" width="348" height="348" fill="none" stroke="#9c978f" stroke-width="1"/>
-  <text x="56" y="68" fill="#9c978f" font-family="Arial, sans-serif" font-size="13">Before · no document</text>
-  <text x="428" y="68" fill="#9c978f" font-family="Arial, sans-serif" font-size="13">After · no document</text>
-  <path d="M72 300h280" stroke="#6f6b64" stroke-width="1"/>
-  <path d="M444 180h280" stroke="#6f6b64" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 180">
+  <text x="28" y="40" fill="rgba(235,235,245,0.62)" font-family="Inter, Arial, sans-serif" font-size="15">Before · no document</text>
+  <text x="428" y="40" fill="rgba(235,235,245,0.62)" font-family="Inter, Arial, sans-serif" font-size="15">After · no document</text>
+  <path d="M400 16v148" stroke="rgba(255,255,255,0.12)"/>
+  <path d="M36 124h328" stroke="rgba(255,255,255,0.45)"/>
+  <path d="M436 88h328" stroke="rgba(255,255,255,0.45)"/>
 </svg>

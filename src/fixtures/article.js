@@ -93,7 +93,7 @@ export const article = {
   panes: {
     fact: {
       label: "Verified fact",
-      note: "Provisional. Grok sorts. It does not verify. A named document can still be wrong.",
+      note: "Provisional. A named source can still be wrong.",
       items: [
         {
           id: "vote",
@@ -135,7 +135,7 @@ export const article = {
     },
     notFact: {
       label: "Not fact",
-      note: "Underlined. Unverified by this pass. Not a false mark.",
+      note: "Unverified by this pass. Not marked false.",
       items: [
         { id: "forever", text: "The coating eliminates corrosion forever." },
         { id: "cure", text: "Independent tests show a 100% cure rate on marine steel." },
