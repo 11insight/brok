@@ -13,7 +13,7 @@ import { readSplit, writeSplit } from "./sidecar/split-memory.js";
 import { fillPosts } from "./ui/article-html.js";
 import { commands, filteredCommands } from "./ui/commands.js";
 import { fillShell, mountSplit, shellHtml, syncShell } from "./ui/shell.js";
-import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet, submitImport } from "./ui/wallet.js";
+import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet, submitWallet } from "./ui/wallet.js";
 
 const article = loadArticle();
 const ledger = createLedger(ledgerSeed);
@@ -27,7 +27,6 @@ const state = {
   accounts: { grok: false, x: false, starlink: false },
   onDevice: true,
   ledgerOpen: false,
-  ledgerFilter: "all",
   signinOpen: false,
   securityOpen: false,
   shelfOpen: false,
@@ -40,6 +39,7 @@ const state = {
   commandIndex: 0,
   commandId: "",
   commandEgress: null,
+  search: { query: "", status: "idle", results: [], error: "" },
 };
 
 const app = document.querySelector("#app");
@@ -77,7 +77,11 @@ function paintShell() {
 function paintWallet() {
   destroyWallet();
   app.innerHTML = "";
-  mountWallet(app);
+  mountWallet(app, {
+    onEgress(row) {
+      ledger.add(row);
+    },
+  });
   document.title = "Wallet · BROK";
 }
 
@@ -297,11 +301,6 @@ app.addEventListener("click", (event) => {
     closeOverlays();
     return;
   }
-  if (action === "ledger-filter") {
-    state.ledgerFilter = target.dataset.filter || "all";
-    sync();
-    return;
-  }
   if (action === "toggle-account") {
     toggleAccount(target.dataset.account);
     return;
@@ -341,9 +340,10 @@ app.addEventListener("click", (event) => {
 });
 
 app.addEventListener("submit", (event) => {
-  if (event.target?.id !== "import-form") return;
+  const form = event.target;
+  if (form?.id !== "import-form" && form?.id !== "send-form") return;
   event.preventDefault();
-  submitImport(event.target);
+  submitWallet(form);
 });
 
 app.addEventListener("input", (event) => {
@@ -404,9 +404,47 @@ ledger.on(() => {
   if (document.querySelector(".window")) sync();
 });
 
+let searchToken = 0;
+
+async function runSearch(query) {
+  const token = ++searchToken;
+  state.search = { query, status: "loading", results: [], error: "" };
+  sync();
+  let failed = false;
+  try {
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const data = await response.json().catch(() => ({}));
+    if (token !== searchToken) return;
+    if (!response.ok) failed = true;
+    state.search = {
+      query,
+      status: failed ? "error" : "done",
+      results: failed ? [] : data.results || [],
+      error: failed ? "Search failed." : "",
+    };
+  } catch {
+    if (token !== searchToken) return;
+    failed = true;
+    state.search = { query, status: "error", results: [], error: "Search failed." };
+  }
+  ledger.add({
+    id: `search-${token}`,
+    klass: "medium",
+    kind: "Web search",
+    host: "duckduckgo.com",
+    result: "allowed",
+    detail: failed
+      ? `Query sent. Results did not come back. "${query.slice(0, 80)}"`
+      : `Query sent. No account was sent. "${query.slice(0, 80)}"`,
+  });
+}
+
 app.addEventListener("submit", (event) => {
   if (!event.target?.classList?.contains("search")) return;
   event.preventDefault();
+  const query = document.getElementById("q")?.value.trim() || "";
+  if (!query) return;
+  runSearch(query);
 });
 
 state.route = routeFromPath(location.pathname);

@@ -4,6 +4,42 @@ import { columnsHtml, fillPosts, originalHtml, railHtml, singleHtml } from "./ar
 import { esc } from "./dom.js";
 import { blockedCount, commandHtml, drawerHtml, securityHtml, shelfHtml, signinHtml } from "./overlays.js";
 
+function resultsHtml(search) {
+  if (!search || search.status === "idle") return "";
+  if (search.status === "loading") return `<p class="results-note">Searching the web.</p>`;
+  if (search.status === "error") return `<p class="results-note">${esc(search.error || "Search failed.")}</p>`;
+  if (!search.results?.length) return `<p class="results-note">No results.</p>`;
+  const items = search.results
+    .map((hit) => {
+      let host = "";
+      try { host = new URL(hit.url).host.replace(/^www\./, ""); } catch { host = ""; }
+      return `<li>
+        <a class="hit" href="${esc(hit.url)}" target="_blank" rel="noreferrer">
+          <h2>${esc(hit.title)}</h2>
+          <p class="host">${esc(host)}</p>
+          <p>${esc(hit.snippet)}</p>
+        </a>
+      </li>`;
+    })
+    .join("");
+  return `<ol class="hits">${items}</ol>`;
+}
+
+export function paintSearch(root, search) {
+  const form = root.querySelector("form.search");
+  const box = root.querySelector("#results");
+  if (!form || !box) return;
+  const active = Boolean(search && search.status && search.status !== "idle");
+  form.classList.toggle("has-results", active);
+  if (!active) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML = resultsHtml(search);
+}
+
 export function shellHtml(article) {
   const stocks = quotesFor(article)
     .map((quote) => {
@@ -40,8 +76,9 @@ export function shellHtml(article) {
       <div class="stage">
         <form class="search" id="search">
           <label for="q">Search</label>
-          <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="Search" />
-          <p class="fine">Nothing is loaded. Nothing is sent.</p>
+          <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="What do you want to know?" />
+          <p class="fine">A search sends the query to DuckDuckGo. No account is sent.</p>
+          <div class="results" id="results" hidden></div>
         </form>
         <div class="single" id="single"></div>
         <div class="columns" id="columns"></div>
@@ -105,7 +142,7 @@ export function syncShell(root, state, rows) {
   win.querySelector("[data-blocked]").textContent = String(blockedCount(rows));
   const drawer = win.querySelector("#drawer");
   drawer.hidden = !state.ledgerOpen;
-  if (state.ledgerOpen) drawer.innerHTML = drawerHtml(rows, state.ledgerFilter);
+  if (state.ledgerOpen) drawer.innerHTML = drawerHtml(rows);
   const signin = win.querySelector("#signin");
   signin.hidden = !state.signinOpen;
   if (state.signinOpen) signin.innerHTML = signinHtml(state.accounts);
@@ -141,6 +178,7 @@ export function syncShell(root, state, rows) {
     }
   }
   document.title = state.route === "original" ? "Original · BROK" : state.route === "search" ? "Search · BROK" : "BROK";
+  paintSearch(root, state.search);
 }
 
 export function mountSplit(root, split) {

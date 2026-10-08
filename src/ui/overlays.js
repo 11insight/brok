@@ -3,62 +3,23 @@ import { filteredCommands } from "./commands.js";
 import { esc, externalLink } from "./dom.js";
 import { grokMark, xMark } from "./official-marks.js";
 
-const FILTERS = [
-  ["all", "All"],
-  ["high", "High"],
-  ["medium", "Medium"],
-  ["low", "Low"],
-  ["would-have", "Would-have"],
-];
-
-function matches(row, filter) {
-  if (filter === "all") return true;
-  if (filter === "would-have") return row.result === "would-have";
-  return row.klass === filter;
-}
-
-export function drawerHtml(rows, filter) {
-  const counts = {
-    high: rows.filter((row) => row.klass === "high").length,
-    medium: rows.filter((row) => row.klass === "medium").length,
-    low: rows.filter((row) => row.klass === "low").length,
-    would: rows.filter((row) => row.result === "would-have").length,
-  };
-  const chips = FILTERS.map(
-    ([id, label]) =>
-      `<button type="button" data-action="ledger-filter" data-filter="${id}" aria-pressed="${filter === id}">${label}</button>`,
-  ).join("");
-  const visible = rows.filter((row) => matches(row, filter));
-  const list = visible.length
-    ? visible
-        .map((row) => {
-          const outcome = row.result === "would-have" ? "Would-have" : labelFor(row.klass);
-          const extra = row.result === "would-have" ? `<span>${esc(labelFor(row.klass))}</span>` : "";
-          return `<article class="ledger-row">
-            <p class="row-class">${outcome} ${extra}</p>
+export function drawerHtml(rows) {
+  const blocked = rows.filter((row) => row.result === "would-have");
+  const list = blocked.length
+    ? blocked
+        .map(
+          (row) => `<article class="ledger-row">
             <h3>${esc(row.kind)}</h3>
             <p class="host">${esc(row.host)}</p>
             <p>${esc(row.detail)}</p>
-          </article>`;
-        })
+          </article>`,
+        )
         .join("")
-    : `<p class="empty">Nothing in this class.</p>`;
+    : `<p class="empty">Nothing blocked.</p>`;
   return `<header class="drawer-head">
-      <h2>Egress ledger</h2>
       <button type="button" data-action="close-overlays">Close</button>
     </header>
-    <p class="estimator">Destination-class estimator. Not a packet trace. No identity in this log.</p>
-    <p class="counts">High ${counts.high} · Medium ${counts.medium} · Low ${counts.low} · Would-have ${counts.would}</p>
-    <div class="filters">${chips}</div>
-    <div class="drawer-list">${list}</div>
-    <p class="estimator">A public aggregate would publish destination classes and block counts only. This copy lives in the tab. A sidecar would append a local log. Refresh clears it.</p>`;
-}
-
-function labelFor(klass) {
-  if (klass === "high") return "High";
-  if (klass === "medium") return "Medium";
-  if (klass === "low") return "Low";
-  return klass;
+    <div class="drawer-list">${list}</div>`;
 }
 
 const officialButtons = {
@@ -71,6 +32,11 @@ const officialButtons = {
     label: "Login with 𝕏",
     mark: xMark,
     href: "https://x.com/i/flow/login",
+  },
+  starlink: {
+    label: "Sign in with Starlink",
+    mark: `<img class="starlink-mark" src="/starlink-icon.png" alt="" width="24" height="24" />`,
+    href: "https://starlink.com/auth/login",
   },
 };
 
@@ -88,9 +54,10 @@ export function signinHtml(accounts) {
   const rows = accountLayers
     .map((layer) => {
       const on = Boolean(accounts[layer.id]);
+      const note = layer.unlocks ? `<p>${esc(layer.unlocks)}</p>` : "";
       return `<div class="account">
         ${accountControl(layer, on)}
-        <p>${esc(layer.unlocks)}</p>
+        ${note}
       </div>`;
     })
     .join("");
@@ -98,9 +65,7 @@ export function signinHtml(accounts) {
       <h2>Sign in</h2>
       <button type="button" data-action="close-overlays">Close</button>
     </header>
-    <p>Sign into Grok and Login with X open the official pages. A session cannot come back to this page.</p>
-    ${rows}
-    <p class="fine">X sign-in is not a location log. Starlink sign-in is. Nothing here is written to disk.</p>`;
+    ${rows}`;
 }
 
 export function securityHtml(state) {

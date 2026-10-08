@@ -2,18 +2,17 @@ export const accountLayers = [
   {
     id: "grok",
     name: "Grok",
-    unlocks: "Official Grok account page.",
+    unlocks: "",
   },
   {
     id: "x",
     name: "X",
-    unlocks: "Official X sign-in page.",
+    unlocks: "",
   },
   {
     id: "starlink",
     name: "Starlink",
-    unlocks:
-      "Dish cell, service tier, and outage history. Coverage only. This sign-in reveals a location, so the ledger records it.",
+    unlocks: "Official Starlink sign-in page.",
   },
 ];
 

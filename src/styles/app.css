@@ -176,32 +176,59 @@ a:hover { color: var(--accent); }
   min-height: calc(100vh - 160px);
   padding: 48px 24px 80px;
 }
+.window[data-route="search"] .search.has-results {
+  justify-content: flex-start;
+  min-height: 0;
+  padding-top: 36px;
+}
 .search label {
-  display: block;
-  margin: 0 auto 10px;
-  width: min(560px, 100%);
-  color: var(--ink-dim);
-  font-size: 13px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .search input {
   display: block;
-  width: min(560px, 100%);
-  height: 52px;
+  width: min(720px, 100%);
+  height: 56px;
   margin: 0 auto;
-  padding: 0 16px;
-  border: 0.5px solid var(--edge-low);
-  border-radius: 0;
-  background: var(--glass);
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(28px) saturate(1.85);
-  backdrop-filter: blur(28px) saturate(1.85);
-  color: var(--ink);
-  font-size: 17px;
+  padding: 0 22px;
+  border: 1px solid #2f3336;
+  border-radius: 28px;
+  background: #16181c;
+  box-shadow: none;
+  color: #e7e9ea;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.006em;
   -webkit-appearance: none;
   appearance: none;
 }
-.search input:focus { outline: none; border-color: var(--edge); }
-.search .fine { width: min(560px, 100%); margin: 12px auto 0; }
+.search input::placeholder { color: #71767b; }
+.search input:focus,
+.search input:focus-visible { outline: none; border-color: #3e4144; }
+.search .fine { width: min(720px, 100%); margin: 14px auto 0; text-align: center; }
+.results { width: min(720px, 100%); margin: 28px auto 0; }
+.results-note { color: var(--ink-dim); font-size: 15px; text-align: center; }
+.hits { list-style: none; }
+.hit {
+  display: block;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+.hit h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.hit .host, .hit p { color: var(--ink-dim); font-size: 14px; }
+.hit .host { margin-top: 4px; }
+.hit p { margin-top: 6px; }
+.hit:hover { color: inherit; }
+.hit:hover h2 { text-decoration: underline; text-underline-offset: 3px; }
 
 .reader { max-width: 720px; margin: 0 auto; padding: 64px 28px 120px; }
 .reader.empty {
@@ -369,6 +396,7 @@ figcaption { margin-top: 10px; color: var(--ink-dim); font-size: 13px; line-heig
 }
 .drawer-head, .filters, .drawer-list, .counts { padding-left: 20px; padding-right: 20px; }
 .drawer-head { padding-top: 20px; }
+.drawer-head button { margin-left: auto; }
 .counts { margin-top: 12px; }
 .filters { display: flex; flex-wrap: wrap; gap: 14px; margin: 14px 0; }
 .filters button { color: var(--ink-dim); font-size: 13px; }
@@ -423,6 +451,13 @@ figcaption { margin-top: 10px; color: var(--ink-dim); font-size: 13px; line-heig
 }
 .account .official .x-mark { width: 24px; height: 24px; flex: none; }
 .account .official .grok-mark { width: auto; height: 20px; flex: none; }
+.account .official .starlink-mark {
+  width: 24px;
+  height: 24px;
+  max-width: none;
+  flex: none;
+  display: block;
+}
 .account-state {
   margin-top: 8px;
   font-size: 12px;
@@ -547,6 +582,49 @@ figcaption { margin-top: 10px; color: var(--ink-dim); font-size: 13px; line-heig
   border-bottom: 1px solid var(--line);
 }
 .phrase label { display: block; color: var(--ink-dim); font-size: 14px; }
+.balance {
+  margin: 4px 0 8px;
+  overflow-wrap: anywhere;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.addr {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  text-align: center;
+  color: var(--ink-dim);
+}
+.wallet .links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin: 12px 0 4px;
+  font-size: 14px;
+}
+.wallet .links button { font-size: 14px; }
+.wallet .primary {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-top: 16px;
+  border: 0.5px solid var(--edge-low);
+  background: var(--glass);
+  box-shadow: var(--glass-shadow);
+  color: var(--ink);
+}
+.wallet .field { margin-top: 14px; text-align: left; }
+.wallet .field input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.wallet .go-on { display: block; width: 100%; margin-top: 8px; }
 
 @media (min-width: 801px) {
   .window.drawer-open .body { margin-right: 400px; }
