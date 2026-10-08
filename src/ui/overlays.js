@@ -66,10 +66,8 @@ export function signinHtml(accounts) {
   const rows = accountLayers
     .map((layer) => {
       const on = Boolean(accounts[layer.id]);
-      const note = "";
       return `<div class="account">
         ${accountControl(layer, on)}
-        ${note}
       </div>`;
     })
     .join("");

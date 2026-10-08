@@ -2,17 +2,14 @@ export const accountLayers = [
   {
     id: "grok",
     name: "Grok",
-    unlocks: "",
   },
   {
     id: "x",
     name: "X",
-    unlocks: "",
   },
   {
     id: "starlink",
     name: "Starlink",
-    unlocks: "Official Starlink sign-in page.",
   },
 ];
 

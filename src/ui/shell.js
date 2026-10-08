@@ -125,7 +125,7 @@ export function syncShell(root, state, rows) {
   const star = win.querySelector("#starlink");
   if (state.accounts.starlink) {
     star.hidden = false;
-    star.textContent = `Cell ${starlinkFixture.cell}  ${starlinkFixture.tier}  ${starlinkFixture.outage}. ${starlinkFixture.note} Logged because it shows a place.`;
+    star.textContent = `Cell ${starlinkFixture.cell}, ${starlinkFixture.tier}, ${starlinkFixture.outage}. ${starlinkFixture.note} Logged because it shows a place.`;
   } else {
     star.hidden = true;
   }
@@ -185,7 +185,7 @@ export function syncShell(root, state, rows) {
       document.querySelector("[data-action='command-run']")?.focus();
     }
   }
-  document.title = state.route === "original" ? "Original  BROK" : state.route === "search" ? "BROK" : "Reader  BROK";
+  document.title = state.route === "original" ? "BROK Original" : state.route === "search" ? "BROK" : "BROK Reader";
   paintSearch(root, state.search);
 }
 
