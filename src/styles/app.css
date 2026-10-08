@@ -338,7 +338,7 @@ figcaption { margin-top: 10px; color: var(--ink-dim); font-size: 13px; line-heig
 .account { padding: 14px 0; border-top: 1px solid var(--line); }
 .account button { font-size: 15px; }
 .account button:not(.official)[aria-pressed="true"] { color: var(--accent); }
-.account button.official {
+.account .official {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,13 +354,14 @@ figcaption { margin-top: 10px; color: var(--ink-dim); font-size: 13px; line-heig
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
+  text-decoration: none;
 }
-.account button.official:hover {
+.account .official:hover {
   color: var(--ink);
   background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
-.account button.official .x-mark { width: 24px; height: 24px; flex: none; }
-.account button.official .grok-mark { width: auto; height: 20px; flex: none; }
+.account .official .x-mark { width: 24px; height: 24px; flex: none; }
+.account .official .grok-mark { width: auto; height: 20px; flex: none; }
 .account-state {
   margin-top: 8px;
   font-size: 12px;

@@ -2,12 +2,12 @@ export const accountLayers = [
   {
     id: "grok",
     name: "Grok",
-    unlocks: "Intelligence layer, pane split, and claim classification.",
+    unlocks: "Official Grok account page.",
   },
   {
     id: "x",
     name: "X",
-    unlocks: "Cite rail and follows. With no X account, the rail stays quiet.",
+    unlocks: "Official X sign-in page.",
   },
   {
     id: "starlink",

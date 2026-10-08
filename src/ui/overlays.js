@@ -62,8 +62,16 @@ function labelFor(klass) {
 }
 
 const officialButtons = {
-  grok: { label: "Sign into Grok", mark: grokMark },
-  x: { label: "Login with 𝕏", mark: xMark },
+  grok: {
+    label: "Sign into Grok",
+    mark: grokMark,
+    href: "https://accounts.x.ai/sign-in?redirect=grok-com",
+  },
+  x: {
+    label: "Login with 𝕏",
+    mark: xMark,
+    href: "https://x.com/i/flow/login",
+  },
 };
 
 function accountControl(layer, on) {
@@ -73,11 +81,7 @@ function accountControl(layer, on) {
           ${esc(layer.name)} · ${on ? "On" : "Off"}
         </button>`;
   }
-  return `<button type="button" class="official" data-action="toggle-account" data-account="${esc(layer.id)}" aria-pressed="${on}">
-          ${official.mark}
-          <span>${esc(official.label)}</span>
-        </button>
-        <p class="account-state" data-on="${on}">${on ? "On" : "Off"}</p>`;
+  return `<a class="official" href="${esc(official.href)}" target="_blank" rel="noreferrer">${official.mark}<span>${official.label}</span></a>`;
 }
 
 export function signinHtml(accounts) {
@@ -94,7 +98,7 @@ export function signinHtml(accounts) {
       <h2>Sign in</h2>
       <button type="button" data-action="close-overlays">Close</button>
     </header>
-    <p>The page stays readable with every account off. Each one unlocks a different layer.</p>
+    <p>Sign into Grok and Login with X open the official pages. A session cannot come back to this page.</p>
     ${rows}
     <p class="fine">X sign-in is not a location log. Starlink sign-in is. Nothing here is written to disk.</p>`;
 }
