@@ -1,22 +1,87 @@
-/* Inter only. No gradients. Dark glass is the Play Crypto material, kept rectangular. */
+/* RESO's system, made softer for BROK. Flat glass over a slow aurora.
+   White is the one thing to press. Indigo is light, focus, and a live count. */
 
 :root {
   color-scheme: dark;
-  --bg: #000;
-  --bg-raise: #141416;
-  --ink: #fff;
-  --ink-dim: rgba(235, 235, 245, 0.62);
-  --ink-faint: rgba(235, 235, 245, 0.3);
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.14);
-  --accent: #c4622d;
-  --accent-dim: rgba(196, 98, 45, 0.18);
-  --glass: rgba(255, 255, 255, 0.07);
-  --edge: rgba(255, 255, 255, 0.3);
-  --edge-low: rgba(255, 255, 255, 0.08);
-  --glass-shadow: inset 0 1px 0 var(--edge), inset 0 -1px 1px var(--edge-low);
-  --font: "Inter", Arial, sans-serif;
-  --chrome-h: 64px;
+
+  --ink-ground: #0a0a0d;
+  --ink-raise: #141418;
+  --ink-rgb: 10, 10, 13;
+  --white: #ffffff;
+  --white-rgb: 255, 255, 255;
+  --indigo: #7678d4;
+  --indigo-lt: #a9abee;
+  --indigo-dk: #34367e;
+  --indigo-rgb: 118, 120, 212;
+  --indigo-dk-rgb: 52, 54, 126;
+  --green: #4cc878;
+  --green-rgb: 76, 200, 120;
+  --danger: #e5a6a6;
+  --danger-rgb: 229, 166, 166;
+
+  /* Words. Nothing a person reads sits below .6. */
+  --ink: rgba(var(--white-rgb), 0.92);
+  --ink-strong: var(--white);
+  --ink-dim: rgba(var(--white-rgb), 0.64);
+  --ink-faint: rgba(var(--white-rgb), 0.6);
+
+  --line: rgba(var(--white-rgb), 0.1);
+  --line-soft: rgba(var(--white-rgb), 0.06);
+
+  /* Glass, three levels of one material. */
+  --glass-1: rgba(var(--white-rgb), 0.08);
+  --glass-1-edge: rgba(var(--white-rgb), 0.14);
+  --glass-1-blur: saturate(150%) blur(32px);
+  --glass-2: rgba(var(--white-rgb), 0.06);
+  --glass-2-edge: rgba(var(--white-rgb), 0.1);
+  --glass-2-blur: saturate(140%) blur(24px);
+  --glass-3: rgba(var(--white-rgb), 0.045);
+  --glass-3-edge: rgba(var(--white-rgb), 0.08);
+  --glass-3-blur: saturate(130%) blur(16px);
+  --selected: rgba(var(--white-rgb), 0.1);
+  --hover: rgba(var(--white-rgb), 0.06);
+
+  --specular: inset 0 1px 0 0 rgba(var(--white-rgb), 0.1);
+  --shadow-card: 0 10px 32px -16px rgba(0, 0, 0, 0.55);
+  --shadow-float: 0 24px 64px -20px rgba(0, 0, 0, 0.7);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --t-micro: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-title: 20px;
+  --t-page: 25px;
+  --t-display: 32px;
+  --t-hero: 44px;
+  --lh-body: 1.55;
+  --lh-title: 1.2;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-12: 48px;
+  --s-16: 64px;
+
+  --ctl-sm: 36px;
+  --ctl: 44px;
+  --ctl-lg: 58px;
+
+  --r-chip: 8px;
+  --r-control: 12px;
+  --r-row: 16px;
+  --r-container: 22px;
+  --r-pill: 9999px; /* switches and dots only */
+
+  --measure: 68ch;
+  --chrome-h: 76px;
+  --t-quick: 0.16s;
+  --t-move: 0.22s;
   --split-ms: 640ms;
   --ease: cubic-bezier(0.16, 0.84, 0.2, 1);
 }

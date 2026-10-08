@@ -4,8 +4,8 @@ export const commands = [
     title: "Split",
     egress(state) {
       const onDevice = state.onDevice
-        ? "On-device mode is on. No call to api.x.ai."
-        : "On-device mode is off. A live pass would send claim text only to api.x.ai. This prototype does not send it.";
+        ? "On device. Nothing goes to api.x.ai."
+        : "A live pass would send claim text to api.x.ai. This build does not.";
       return {
         destination: "None",
         leaves: "Nothing. The split stays in this tab.",
@@ -19,8 +19,8 @@ export const commands = [
     egress() {
       return {
         destination: "api.x.com",
-        leaves: "A live query would send url: plus the page address, and read post text only.",
-        note: "Not sent. Likes are not a weight, and For You is not a rank.",
+        leaves: "The page address. Only post text comes back.",
+        note: "Not sent yet. Likes do not change the order.",
       };
     },
   },
@@ -29,20 +29,20 @@ export const commands = [
     title: "Grokipedia",
     egress() {
       return {
-        destination: "grokipedia.com, only if you open the link",
-        leaves: "The shelf itself stays local. The link would request that host.",
-        note: "Opening the shelf does not promote a claim. It is a reference, not a verdict.",
+        destination: "grokipedia.com, if you open the link",
+        leaves: "Nothing until you open the link.",
+        note: "A reference, not a verdict.",
       };
     },
   },
   {
     id: "ledger",
-    title: "Ledger",
+    title: "Blocked list",
     egress() {
       return {
         destination: "None",
-        leaves: "Nothing. The estimator stays in this tab.",
-        note: "Destination classes and block counts only. No identity.",
+        leaves: "Nothing. The list stays in this tab.",
+        note: "Counts and kinds only. No identity.",
       };
     },
   },
@@ -53,7 +53,7 @@ export const commands = [
       return {
         destination: "None",
         leaves: "Nothing.",
-        note: "The only inference egress is Send pane to Grok, and only with on-device mode off.",
+        note: "Only Send pane to Grok can leave, and only when you allow it.",
       };
     },
   },

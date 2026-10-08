@@ -2,11 +2,14 @@ import { starlinkFixture } from "../fixtures/accounts.js";
 import { quotesFor } from "../fixtures/ticker.js";
 import { columnsHtml, fillPosts, originalHtml, railHtml, singleHtml } from "./article-html.js";
 import { esc } from "./dom.js";
+import { arrowIcon, brandMark, searchIcon } from "./icons.js";
 import { blockedCount, commandHtml, drawerHtml, securityHtml, shelfHtml, signinHtml } from "./overlays.js";
 
 function resultsHtml(search) {
   if (!search || search.status === "idle") return "";
-  if (search.status === "loading") return `<p class="results-note">Searching the web.</p>`;
+  if (search.status === "loading") {
+    return `<ol class="hits is-loading" aria-label="Searching">${"<li><span class=\"hit hit-ghost\"><i></i><i></i><i></i></span></li>".repeat(3)}</ol>`;
+  }
   if (search.status === "error") return `<p class="results-note">${esc(search.error || "Search failed.")}</p>`;
   if (!search.results?.length) return `<p class="results-note">No results.</p>`;
   const items = search.results
@@ -15,8 +18,8 @@ function resultsHtml(search) {
       try { host = new URL(hit.url).host.replace(/^www\./, ""); } catch { host = ""; }
       return `<li>
         <a class="hit" href="${esc(hit.url)}" target="_blank" rel="noreferrer">
-          <h2>${esc(hit.title)}</h2>
           <p class="host">${esc(host)}</p>
+          <h2>${esc(hit.title)}</h2>
           <p>${esc(hit.snippet)}</p>
         </a>
       </li>`;
@@ -54,17 +57,17 @@ export function shellHtml(article) {
   return `<div class="window" data-route="browser">
     <div class="chrome">
       <div class="toolbar">
-        <button type="button" class="brand" data-action="go" data-route="search">BROK</button>
-        <button type="button" class="hamburger" data-action="toggle-split" aria-pressed="false" aria-label="Split into three panes">
+        <button type="button" class="brand" data-action="go" data-route="search" aria-label="BROK home">${brandMark}<span>BROK</span></button>
+        <button type="button" class="hamburger icon-btn" data-action="toggle-split" aria-pressed="false" aria-label="Split into three panes">
           <span class="hb" aria-hidden="true"><i></i><i></i><i></i></span>
         </button>
         <p class="omnibox">${esc(article.url)}</p>
-        <div class="tools">
-          <button type="button" class="tool" data-action="open-ledger"><span data-blocked>0</span> blocked</button>
+        <nav class="tools" aria-label="Tools">
+          <button type="button" class="tool" data-action="open-ledger"><span class="count" data-blocked>0</span><span class="tool-word">Blocked</span></button>
           <button type="button" class="tool" data-action="open-signin">Sign in</button>
           <button type="button" class="tool" data-action="go" data-route="wallet">Wallet</button>
-          <button type="button" class="tool kbd" data-action="open-command">⌘K</button>
-        </div>
+          <button type="button" class="tool kbd" data-action="open-command" aria-label="Commands"><kbd>⌘K</kbd></button>
+        </nav>
       </div>
     </div>
     <div class="meta">
@@ -75,9 +78,14 @@ export function shellHtml(article) {
     <div class="body">
       <div class="stage">
         <form class="search" id="search">
+          <div class="hero" aria-hidden="true">${brandMark}<p class="wordmark">BROK</p></div>
           <label for="q">Search</label>
-          <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="What do you want to know?" />
-          <p class="fine">A search sends the query to Bing. No account is sent.</p>
+          <div class="field-search">
+            ${searchIcon}
+            <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="What do you want to know?" />
+            <button type="submit" class="go" aria-label="Search">${arrowIcon}</button>
+          </div>
+          <p class="fine">Searches go to Bing. Your accounts stay here.</p>
           <div class="results" id="results" hidden></div>
         </form>
         <div class="single" id="single"></div>
@@ -117,7 +125,7 @@ export function syncShell(root, state, rows) {
   const star = win.querySelector("#starlink");
   if (state.accounts.starlink) {
     star.hidden = false;
-    star.textContent = `Cell ${starlinkFixture.cell} · ${starlinkFixture.tier} · ${starlinkFixture.outage}. ${starlinkFixture.note} This sign-in is in the ledger because it reveals a location.`;
+    star.textContent = `Cell ${starlinkFixture.cell}  ${starlinkFixture.tier}  ${starlinkFixture.outage}. ${starlinkFixture.note} Logged because it shows a place.`;
   } else {
     star.hidden = true;
   }
@@ -177,7 +185,7 @@ export function syncShell(root, state, rows) {
       document.querySelector("[data-action='command-run']")?.focus();
     }
   }
-  document.title = state.route === "original" ? "Original · BROK" : state.route === "search" ? "Search · BROK" : "BROK";
+  document.title = state.route === "original" ? "Original  BROK" : state.route === "search" ? "BROK" : "Reader  BROK";
   paintSearch(root, state.search);
 }
 

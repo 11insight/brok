@@ -1,4 +1,5 @@
 import { externalLink, esc } from "./dom.js";
+import { backIcon } from "./icons.js";
 import {
   RPC_HOST,
   broadcastSend,
@@ -69,11 +70,12 @@ function paint() {
   blankSecrets();
   host.innerHTML = `<div class="wallet">
     <div class="wallet-top">
-      <button type="button" data-action="go" data-route="back">Back</button>
-      <p class="kicker">Sepolia</p>
+      <button type="button" class="icon-btn glassy" data-action="go" data-route="back" aria-label="Back">${backIcon}</button>
+      <h1 class="wallet-title">Wallet</h1>
+      <span class="chip net"><i class="dot"></i>Sepolia</span>
     </div>
     ${body()}
-    <p class="fine wallet-foot">The recovery phrase is not saved in this browser.</p>
+    <p class="fine wallet-foot">Your phrase is never saved. Reload and the wallet is gone.</p>
   </div>`;
 }
 
@@ -86,17 +88,18 @@ function body() {
 
 function lockedHtml() {
   return `<section class="phrase">
-    <h2>Wallet</h2>
-    <p>A 12-word phrase is created on this device. It is shown once and not saved here.</p>
-    <button type="button" class="primary" data-action="wallet-create">Create wallet</button>
+    <h2>New wallet</h2>
+    <p>You get 12 words, made on this device. You see them once.</p>
+    <button type="button" class="btn primary block" data-action="wallet-create">Create wallet</button>
+    <p class="or"><span>or</span></p>
     <form id="import-form" autocomplete="off">
       <div class="field">
-        <label for="import-phrase">Import a recovery phrase</label>
+        <label for="import-phrase">Recovery phrase</label>
         <input id="import-phrase" name="brok-import" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" />
       </div>
-      <button type="submit" class="primary">Import</button>
+      <button type="submit" class="btn block">Import</button>
     </form>
-    <p class="fine">${esc(note)}</p>
+    <p class="fine note">${esc(note)}</p>
   </section>`;
 }
 
@@ -106,12 +109,11 @@ function revealHtml() {
     .map((word, index) => `<li data-secret translate="no"><span>${index + 1}</span> ${esc(word)}</li>`)
     .join("");
   return `<section class="phrase">
-    <h2>Recovery phrase</h2>
-    <p>Write these 12 words down. They leave this page when you continue, and they are not saved here.</p>
+    <h2>Write these down</h2>
+    <p>They are gone from this page once you go on.</p>
     <ol class="words">${list}</ol>
-    <p class="addr">${esc(getAddress())}</p>
-    <button type="button" class="go-on" data-action="wallet-copy">Copy address</button>
-    <button type="button" class="primary" data-action="wallet-clear">I have stored it elsewhere</button>
+    <button type="button" class="addr" data-action="wallet-copy" title="Copy address">${esc(getAddress())}</button>
+    <button type="button" class="btn primary block" data-action="wallet-clear">I wrote them down</button>
   </section>`;
 }
 
@@ -120,37 +122,39 @@ function readyHtml() {
   const balance =
     balanceState === "loading" ? "Reading balance." : balanceState === "error" ? "Balance did not come back." : balanceLabel;
   const sent = txHash
-    ? `<p class="fine">Sent. ${externalLink(`https://sepolia.etherscan.io/tx/${txHash}`, "View transaction")}</p>`
+    ? `<p class="sent">Sent. ${externalLink(`https://sepolia.etherscan.io/tx/${txHash}`, "View it")}</p>`
     : "";
-  return `<section class="phrase">
+  return `<section class="phrase balance-card">
+    <p class="eyebrow">Balance</p>
     <p class="balance" data-balance>${esc(balance)}</p>
-    <p class="addr">${esc(address)}</p>
+    <button type="button" class="addr" data-action="wallet-copy" title="Copy address">${esc(address)}</button>
     <p class="links">
-      ${externalLink(`https://sepolia.etherscan.io/address/${address}`, "Etherscan")}
-      ${externalLink(FAUCET, "Sepolia faucet")}
-      <button type="button" data-action="wallet-copy">Copy address</button>
+      ${externalLink(`https://sepolia.etherscan.io/address/${address}`, "Etherscan", "btn sm")}
+      ${externalLink(FAUCET, "Get test ETH", "btn sm")}
     </p>
+  </section>
+  <section class="phrase">
+    <h2>Send</h2>
     <form id="send-form" autocomplete="off">
       <div class="field">
         <label for="send-to">To</label>
         <input id="send-to" type="text" autocomplete="off" spellcheck="false" value="${esc(draftTo)}" />
       </div>
       <div class="field">
-        <label for="send-amount">Amount</label>
+        <label for="send-amount">Amount in ETH</label>
         <input id="send-amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(draftAmount)}" />
       </div>
-      <button type="submit" class="primary" ${busy ? "disabled" : ""}>Review send</button>
+      <button type="submit" class="btn primary block" ${busy ? "disabled" : ""}>${busy ? "Checking" : "Review"}</button>
     </form>
-    <p class="fine">${esc(note)}</p>
+    <p class="fine note">${esc(note)}</p>
     ${sent}
-    <button type="button" class="go-on" data-action="wallet-lock">Use a different phrase</button>
-    <p class="fine">This address lasts until you reload the page.</p>
-  </section>`;
+  </section>
+  <button type="button" class="btn ghost block" data-action="wallet-lock">Use a different phrase</button>`;
 }
 
 function pauseHtml() {
   return `<section class="pause" aria-labelledby="pause-title">
-    <p class="eyebrow">Paused</p>
+    <p class="eyebrow warn">Check this first</p>
     <h1 id="pause-title">${esc(pause.title)}</h1>
     <p class="reason">${esc(pause.reason)}</p>
     <dl class="facts">
@@ -160,10 +164,9 @@ function pauseHtml() {
       <div><dt>Network</dt><dd>Sepolia</dd></div>
     </dl>
     <div class="pause-actions">
-      <button type="button" class="stop" data-action="wallet-cancel" ${busy ? "disabled" : ""}>Cancel</button>
-      <button type="button" class="go-on" data-action="wallet-continue" ${busy ? "disabled" : ""}>Continue anyway</button>
+      <button type="button" class="btn primary block" data-action="wallet-cancel" ${busy ? "disabled" : ""}>Cancel</button>
+      <button type="button" class="btn ghost block" data-action="wallet-continue" ${busy ? "disabled" : ""}>${busy ? "Sending" : "Send anyway"}</button>
     </div>
-    <p class="fine">Cancel is the default. Continue signs this Sepolia transaction.</p>
   </section>`;
 }
 
