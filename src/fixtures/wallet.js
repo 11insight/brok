@@ -21,7 +21,7 @@ export const transactions = [
     title: "Swap to NS14.claim",
     reasonTitle: "Known scam token",
     reason:
-      "NS14.claim is on the fixture scam list. The name sits next to Northspan's NS-14. Signing would approve a contract flagged as a scam.",
+      "NS14.claim is on the fixture scam list. Signing would approve a contract flagged as a scam.",
     token: "NS14.claim",
     amount: "1.2 testnet units",
     contract: "fixture-contract-not-an-address",

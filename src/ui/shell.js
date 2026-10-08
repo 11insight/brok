@@ -41,7 +41,7 @@ export function shellHtml(article) {
         <form class="search" id="search">
           <label for="q">Search</label>
           <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="Search" />
-          <p class="fine">Opens the one rebuilt page. Nothing is sent.</p>
+          <p class="fine">Nothing is loaded. Nothing is sent.</p>
         </form>
         <div class="single" id="single"></div>
         <div class="columns" id="columns"></div>
@@ -85,6 +85,13 @@ export function syncShell(root, state, rows) {
     star.hidden = true;
   }
   const closing = win.classList.contains("is-closing");
+  const pageOn = Boolean(state.article?.url);
+  const omnibox = win.querySelector(".omnibox");
+  if (omnibox) omnibox.hidden = !pageOn;
+  const hamburger = win.querySelector(".hamburger");
+  if (hamburger) hamburger.hidden = !pageOn;
+  const meta = win.querySelector(".meta");
+  if (meta) meta.hidden = !pageOn;
   const quiet = win.querySelector("#quiet");
   quiet.hidden = state.accounts.x || state.split || closing;
   const rail = win.querySelector("#rail");

@@ -135,7 +135,9 @@ export function securityHtml(state) {
 }
 
 export function shelfHtml(article) {
-  const link = externalLink(article.grokipedia, article.grokipediaLabel);
+  const link = article.grokipedia
+    ? externalLink(article.grokipedia, article.grokipediaLabel)
+    : "No page loaded.";
   return `<header class="pop-head">
       <h2>Grokipedia</h2>
       <button type="button" data-action="close-overlays">Close</button>

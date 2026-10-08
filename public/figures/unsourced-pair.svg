@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 180">
-  <text x="28" y="40" fill="rgba(235,235,245,0.62)" font-family="Inter, Arial, sans-serif" font-size="15">Before · no document</text>
-  <text x="428" y="40" fill="rgba(235,235,245,0.62)" font-family="Inter, Arial, sans-serif" font-size="15">After · no document</text>
-  <path d="M400 16v148" stroke="rgba(255,255,255,0.12)"/>
-  <path d="M36 124h328" stroke="rgba(255,255,255,0.45)"/>
-  <path d="M436 88h328" stroke="rgba(255,255,255,0.45)"/>
-</svg>

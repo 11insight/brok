@@ -1,12 +1,7 @@
 // Citing posts come from a real X query. This prototype does not invent them.
 export const posts = [];
 
-export const claimLabels = {
-  forever: "Eliminates corrosion forever",
-  vote: "The 7–2 vote",
-  doubles: "The stock doubles",
-  cure: "100% cure rate",
-};
+export const claimLabels = {};
 
 export function railBlocks(list) {
   const sorted = list.slice().sort((a, b) => Date.parse(b.time) - Date.parse(a.time));

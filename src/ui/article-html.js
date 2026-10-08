@@ -3,6 +3,14 @@ import { claimLabels, railBlocks } from "../fixtures/cites.js";
 import { againstPage, formatWhen } from "./format.js";
 import { esc } from "./dom.js";
 
+function hasPage(article) {
+  return Boolean(article?.title || article?.blocks?.length);
+}
+
+function emptyHtml() {
+  return `<article class="reader empty"><p>No page loaded.</p></article>`;
+}
+
 function figureHtml(figure) {
   const flagClass = figure.flag === "Unsourced" ? "flag flag-unsourced" : "flag";
   return `<figure class="figure">
@@ -25,6 +33,7 @@ function paragraphHtml(block) {
 }
 
 export function singleHtml(article) {
+  if (!hasPage(article)) return emptyHtml();
   const body = article.blocks
     .map((block) => (block.type === "figure" ? figureHtml(article.figures[block.id]) : paragraphHtml(block)))
     .join("");
@@ -79,6 +88,7 @@ export function postsRegion(posts, pageIso, xOn) {
 }
 
 export function columnsHtml(article) {
+  if (!hasPage(article)) return emptyHtml();
   const panes = panesFromFixture(article);
   const fact = panes.fact;
   const opinion = panes.opinion;
@@ -165,6 +175,7 @@ export function railHtml(posts, pageIso) {
 }
 
 export function originalHtml(article) {
+  if (!hasPage(article)) return emptyHtml();
   const slots = [
     ["High", "Ad exchange"],
     ["High", "Pixel"],

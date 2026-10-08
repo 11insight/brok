@@ -17,7 +17,7 @@ import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet,
 
 const article = loadArticle();
 const ledger = createLedger(ledgerSeed);
-const SEND_PREVIEW = "The coating eliminates corrosion forever.";
+const SEND_PREVIEW = "No claim is loaded.";
 
 const state = {
   route: "search",
@@ -407,7 +407,6 @@ ledger.on(() => {
 app.addEventListener("submit", (event) => {
   if (!event.target?.classList?.contains("search")) return;
   event.preventDefault();
-  go("browser");
 });
 
 state.route = routeFromPath(location.pathname);

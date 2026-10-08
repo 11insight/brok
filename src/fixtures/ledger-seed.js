@@ -39,28 +39,4 @@ export const ledgerSeed = [
     result: "would-have",
     detail: "Blocked before the request.",
   },
-  {
-    id: "first-party",
-    klass: "low",
-    kind: "First party",
-    host: "harbor.example.test",
-    result: "allowed",
-    detail: "The article host.",
-  },
-  {
-    id: "cdn",
-    klass: "low",
-    kind: "CDN",
-    host: "images.cdn.test",
-    result: "allowed",
-    detail: "Original image host, represented here by a local figure.",
-  },
-  {
-    id: "proxy",
-    klass: "low",
-    kind: "Image proxy",
-    host: "images.proxy.test",
-    result: "allowed",
-    detail: "Hotlink stand-in. Logged. These figures did not leave the machine.",
-  },
 ];

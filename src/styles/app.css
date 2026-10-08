@@ -204,6 +204,13 @@ a:hover { color: var(--accent); }
 .search .fine { width: min(560px, 100%); margin: 12px auto 0; }
 
 .reader { max-width: 720px; margin: 0 auto; padding: 64px 28px 120px; }
+.reader.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 160px);
+  color: var(--ink-dim);
+}
 .article-top, .wallet-top, .pop-head, .drawer-head, .post-top {
   display: flex;
   justify-content: space-between;
