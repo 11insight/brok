@@ -55,7 +55,7 @@ function paint() {
     : "";
   host.innerHTML = `<div class="wallet">
     <div class="wallet-top">
-      <button type="button" data-action="go" data-route="browser">Back</button>
+      <button type="button" data-action="go" data-route="back">Back</button>
       <p class="kicker">Testnet fixture</p>
     </div>
     <section class="pause" aria-labelledby="pause-title">

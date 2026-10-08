@@ -18,6 +18,7 @@ export function shellHtml(article) {
   return `<div class="window" data-route="browser">
     <div class="chrome">
       <div class="toolbar">
+        <button type="button" class="brand" data-action="go" data-route="search">BROK</button>
         <button type="button" class="hamburger" data-action="toggle-split" aria-pressed="false" aria-label="Split into three panes">
           <span class="hb" aria-hidden="true"><i></i><i></i><i></i></span>
         </button>
@@ -37,6 +38,11 @@ export function shellHtml(article) {
     </div>
     <div class="body">
       <div class="stage">
+        <form class="search" id="search">
+          <label for="q">Search</label>
+          <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="Search" />
+          <p class="fine">Opens the one rebuilt page. Nothing is sent.</p>
+        </form>
         <div class="single" id="single"></div>
         <div class="columns" id="columns"></div>
         <div id="original"></div>
@@ -82,7 +88,7 @@ export function syncShell(root, state, rows) {
   const quiet = win.querySelector("#quiet");
   quiet.hidden = state.accounts.x || state.split || closing;
   const rail = win.querySelector("#rail");
-  rail.hidden = !state.accounts.x || state.split || closing || state.route === "original";
+  rail.hidden = !state.accounts.x || state.split || closing || state.route === "original" || state.route === "search";
   const inference = win.querySelector("#inference");
   if (inference) {
     inference.textContent = state.accounts.grok
@@ -127,7 +133,7 @@ export function syncShell(root, state, rows) {
       document.querySelector("[data-action='command-run']")?.focus();
     }
   }
-  document.title = state.route === "original" ? "Original · BROK" : "BROK";
+  document.title = state.route === "original" ? "Original · BROK" : state.route === "search" ? "Search · BROK" : "BROK";
 }
 
 export function mountSplit(root, split) {

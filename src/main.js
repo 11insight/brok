@@ -20,7 +20,8 @@ const ledger = createLedger(ledgerSeed);
 const SEND_PREVIEW = "The coating eliminates corrosion forever.";
 
 const state = {
-  route: "browser",
+  route: "search",
+  back: "search",
   split: readSplit(article.id),
   article,
   accounts: { grok: false, x: false, starlink: false },
@@ -94,11 +95,23 @@ function closeOverlays() {
 function routeFromPath(path) {
   if (path.startsWith("/wallet")) return "wallet";
   if (path.startsWith("/original")) return "original";
-  return "browser";
+  if (path.startsWith("/read")) return "browser";
+  return "search";
+}
+
+function pathFor(route) {
+  if (route === "search") return "/";
+  if (route === "browser") return "/read";
+  return `/${route}`;
+}
+
+function focusRoute() {
+  if (state.route === "search") document.getElementById("q")?.focus();
 }
 
 function go(route) {
-  const path = route === "browser" ? "/" : `/${route}`;
+  if (route === "wallet" && state.route !== "wallet") state.back = state.route;
+  const path = pathFor(route);
   if (location.pathname !== path) history.pushState({ route }, "", path);
   const leavingWallet = state.route === "wallet" && route !== "wallet";
   if (leavingWallet) destroyWallet();
@@ -113,6 +126,7 @@ function go(route) {
   if (route === "wallet") paintWallet();
   else if (!document.querySelector(".window")) paintShell();
   else sync();
+  focusRoute();
 }
 
 function setSplit(on) {
@@ -242,7 +256,8 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (action === "go") {
-    const route = target.dataset.route;
+    let route = target.dataset.route;
+    if (route === "back") route = state.back || "search";
     if (state.route === "original" && route === "browser" && target.classList.contains("hamburger")) {
       go("browser");
       setSplit(!state.split);
@@ -382,12 +397,20 @@ window.addEventListener("popstate", () => {
   if (route === "wallet") paintWallet();
   else if (!document.querySelector(".window")) paintShell();
   else sync();
+  focusRoute();
 });
 
 ledger.on(() => {
   if (document.querySelector(".window")) sync();
 });
 
+app.addEventListener("submit", (event) => {
+  if (!event.target?.classList?.contains("search")) return;
+  event.preventDefault();
+  go("browser");
+});
+
 state.route = routeFromPath(location.pathname);
 if (state.route === "wallet") paintWallet();
 else paintShell();
+focusRoute();
