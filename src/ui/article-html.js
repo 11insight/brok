@@ -1,4 +1,3 @@
-import { panesFromFixture } from "../sidecar/classify.js";
 import { claimLabels, railBlocks } from "../fixtures/cites.js";
 import { againstPage, formatWhen } from "./format.js";
 import { esc } from "./dom.js";
@@ -7,47 +6,48 @@ function hasPage(article) {
   return Boolean(article?.title || article?.blocks?.length);
 }
 
-function emptyHtml() {
+function emptyHtml(article) {
+  if (article?.status === "loading") {
+    return `<article class="reader empty" aria-busy="true"><p>Reading the page.</p></article>`;
+  }
+  if (article?.status === "error") {
+    const link = article.url
+      ? `<p><a href="${esc(article.url)}" target="_blank" rel="noreferrer">Open the original page</a></p>`
+      : "";
+    return `<article class="reader empty"><p>${esc(article.error || "That page could not be read.")}</p>${link}</article>`;
+  }
   return `<article class="reader empty"><p>No page loaded.</p></article>`;
 }
 
-function figureHtml(figure) {
-  const flagClass = figure.flag === "Unsourced" ? "flag flag-unsourced" : "flag";
-  return `<figure class="figure">
-    <img src="${esc(figure.src)}" alt="${esc(figure.alt)}" width="800" height="420" />
-    <figcaption>
-      <span class="${flagClass}">${esc(figure.flag)}</span>
-      ${esc(figure.caption)}
-    </figcaption>
-  </figure>`;
+function blockHtml(block) {
+  const text = esc(block.text);
+  if (block.type === "h") return `<h2>${text}</h2>`;
+  if (block.type === "quote") return `<blockquote>${text}</blockquote>`;
+  if (block.type === "li") return `<p class="li">${text}</p>`;
+  return `<p>${text}</p>`;
 }
 
-function paragraphHtml(block) {
-  const inner = block.parts
-    .map((part) => {
-      const text = esc(part.text);
-      return part.unverified ? `<span class="unverified">${text}</span>` : text;
-    })
-    .join("");
-  return `<p>${inner}</p>`;
+function kicker(article) {
+  return [article.source, article.publishedLabel].filter(Boolean).map(esc).join(", ");
 }
 
 export function singleHtml(article) {
-  if (!hasPage(article)) return emptyHtml();
-  const body = article.blocks
-    .map((block) => (block.type === "figure" ? figureHtml(article.figures[block.id]) : paragraphHtml(block)))
-    .join("");
+  if (!hasPage(article)) return emptyHtml(article);
+  const body = article.blocks.length
+    ? article.blocks.map(blockHtml).join("")
+    : `<p class="empty">This page has no article text BROK can pull out.</p>`;
+  const byline = article.byline ? `<p class="kicker">${esc(article.byline)}</p>` : "";
   return `<article class="reader">
     <div class="article-top">
-      <p class="kicker">${esc(article.source)} · ${esc(article.publishedLabel)}</p>
+      <p class="kicker">${kicker(article)}</p>
       <button type="button" data-action="go" data-route="original">Original page</button>
     </div>
     <h1>${esc(article.title)}</h1>
+    ${byline}
     ${body}
-    <p class="legend">Underline means unverified by this pass. It does not mean false. Figures stand in for the original images.</p>
+    <p class="legend">Text only. Images, scripts and ${esc(String(article.blocked?.length || 0))} third parties were left out.</p>
   </article>`;
 }
-
 function postHtml(post, pageIso) {
   const when = againstPage(post.time, pageIso);
   const stale = when.stale ? `<span class="stale">Stale</span>` : "";
@@ -87,71 +87,57 @@ export function postsRegion(posts, pageIso, xOn) {
   return blocksHtml(posts, pageIso);
 }
 
+function paneNote(article) {
+  const split = article.split || {};
+  if (split.status === "loading") return "Grok is reading the page.";
+  if (split.status === "error") return split.error || "The split failed.";
+  if (split.status === "done") return `Split by ${split.model || "Grok"}. A first pass, not a ruling.`;
+  return "Not split yet. Turn off Keep it on this device in Security, then send the page to Grok.";
+}
+
 export function columnsHtml(article) {
-  if (!hasPage(article)) return emptyHtml();
-  const panes = panesFromFixture(article);
-  const fact = panes.fact;
-  const opinion = panes.opinion;
-  const notFact = panes.notFact;
-  const factItems = fact.items
+  if (!hasPage(article)) return emptyHtml(article);
+  const panes = article.panes;
+  const factItems = panes.fact.items
     .map(
-      (item) => `<article class="claim" data-claim="${esc(item.id)}">
+      (item) => `<article class="claim">
         <p>${esc(item.text)}</p>
         <p class="source">${esc(item.source)}</p>
       </article>`,
     )
     .join("");
-  const opinionItems = `<div class="equal">${opinion.items
-    .map(
-      (item) => `<article class="claim">
-        <p class="speaker">${esc(item.speaker)}</p>
-        <p>${esc(item.text)}</p>
-      </article>`,
-    )
-    .join("")}</div>`;
-  const notItems = notFact.items
+  const opinionItems = panes.opinion.items.length
+    ? `<div class="equal">${panes.opinion.items
+        .map(
+          (item) => `<article class="claim">
+            <p class="speaker">${esc(item.speaker)}</p>
+            <p>${esc(item.text)}</p>
+          </article>`,
+        )
+        .join("")}</div>`
+    : "";
+  const notItems = panes.notFact.items
     .map(
       (item) => `<article class="claim">
         <p class="unverified">${esc(item.text)}</p>
       </article>`,
     )
     .join("");
-
-  return `<p class="inference" id="inference"></p>
+  const pane = (key, data, items) => `<section class="pane" data-pane="${key}">
+      <header class="pane-head">
+        <h2>${esc(data.label)}</h2>
+        <p>${esc(data.note)}</p>
+      </header>
+      <div class="pane-body">
+        ${items || `<p class="empty">Nothing here yet.</p>`}
+        <div class="pane-posts" data-posts="${key}"></div>
+      </div>
+    </section>`;
+  return `<p class="inference" id="inference">${esc(paneNote(article))}</p>
     <div class="panes">
-    <section class="pane" data-pane="fact">
-      <header class="pane-head">
-        <h2>${esc(fact.label)}</h2>
-        <p>${esc(fact.note)}</p>
-      </header>
-      <div class="pane-body">
-        ${figureHtml(article.figures.inspection)}
-        ${factItems}
-        <div class="pane-posts" data-posts="fact"></div>
-      </div>
-    </section>
-    <section class="pane" data-pane="opinion">
-      <header class="pane-head">
-        <h2>${esc(opinion.label)}</h2>
-        <p>${esc(opinion.note)}</p>
-      </header>
-      <div class="pane-body">
-        ${figureHtml(article.figures.poster)}
-        ${opinionItems}
-        <div class="pane-posts" data-posts="opinion"></div>
-      </div>
-    </section>
-    <section class="pane" data-pane="not">
-      <header class="pane-head">
-        <h2>${esc(notFact.label)}</h2>
-        <p>${esc(notFact.note)}</p>
-      </header>
-      <div class="pane-body">
-        ${figureHtml(article.figures.pair)}
-        ${notItems}
-        <div class="pane-posts" data-posts="not"></div>
-      </div>
-    </section>
+    ${pane("fact", panes.fact, factItems)}
+    ${pane("opinion", panes.opinion, opinionItems)}
+    ${pane("not", panes.notFact, notItems)}
     </div>`;
 }
 
@@ -175,41 +161,28 @@ export function railHtml(posts, pageIso) {
 }
 
 export function originalHtml(article) {
-  if (!hasPage(article)) return emptyHtml();
-  const slots = [
-    ["High", "Ad exchange"],
-    ["High", "Pixel"],
-    ["High", "Session replay"],
-    ["Medium", "Affiliate click"],
-  ]
-    .map(
-      ([klass, kind]) => `<div class="blocked-slot">
-        <p class="flag">${esc(klass)} · Would-have</p>
-        <p>${esc(kind)}</p>
-        <p>Did not render. See the ledger.</p>
+  if (!hasPage(article)) return emptyHtml(article);
+  const blocked = article.blocked || [];
+  const slots = blocked.length
+    ? blocked
+        .map(
+          (row) => `<div class="blocked-slot">
+        <p class="flag">${esc(row.kind)}</p>
+        <p>${esc(row.host)}</p>
       </div>`,
-    )
-    .join("");
-  const body = article.blocks
-    .map((block) => (block.type === "figure" ? figureHtml(article.figures[block.id]) : paragraphHtml(block)))
-    .join("");
+        )
+        .join("")
+    : `<p class="empty">This page asked for no third parties.</p>`;
   return `<div class="original">
-    <p class="original-banner">Original fixture. The rebuild is a rendering, not this page. Third parties did not render.</p>
+    <p class="original-banner">BROK rebuilt this page from its text. These third parties never loaded.</p>
     <div class="original-grid">
       <article class="messy">
         <button type="button" data-action="go" data-route="browser">Rebuilt page</button>
-        <p class="messy-tools">Share widgets blocked · comment host blocked</p>
-        <p class="kicker">${esc(article.source)}</p>
+        <p class="kicker">${kicker(article)}</p>
         <h1>${esc(article.title)}</h1>
-        ${body}
+        <p><a href="${esc(article.url)}" target="_blank" rel="noreferrer">Open the original in a new tab</a>. Its trackers will load there.</p>
       </article>
-      <aside class="clutter">
-        <div class="blocked-slot">
-          <p class="flag">Would-have</p>
-          <p>A third-party notice would have loaded here. It was blocked before the request.</p>
-        </div>
-        ${slots}
-      </aside>
+      <aside class="clutter">${slots}</aside>
     </div>
   </div>`;
 }

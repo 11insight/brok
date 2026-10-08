@@ -6,8 +6,7 @@ import "./styles/tokens.css";
 import "./styles/app.css";
 
 import { posts } from "./fixtures/cites.js";
-import { ledgerSeed } from "./fixtures/ledger-seed.js";
-import { loadArticle } from "./sidecar/article.js";
+import { emptyArticle, loadArticle, splitArticle } from "./sidecar/article.js";
 import { createLedger } from "./sidecar/ledger.js";
 import { readSplit, writeSplit } from "./sidecar/split-memory.js";
 import { fillPosts } from "./ui/article-html.js";
@@ -15,15 +14,13 @@ import { commands, filteredCommands } from "./ui/commands.js";
 import { fillShell, mountSplit, shellHtml, syncShell } from "./ui/shell.js";
 import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet, submitWallet } from "./ui/wallet.js";
 
-const article = loadArticle();
-const ledger = createLedger(ledgerSeed);
-const SEND_PREVIEW = "No claim is loaded.";
+const ledger = createLedger([]);
 
 const state = {
   route: "search",
   back: "search",
-  split: readSplit(article.id),
-  article,
+  split: false,
+  article: emptyArticle(),
   accounts: { grok: false, x: false, starlink: false },
   onDevice: true,
   ledgerOpen: false,
@@ -31,7 +28,6 @@ const state = {
   securityOpen: false,
   shelfOpen: false,
   pendingSend: false,
-  sendPreview: SEND_PREVIEW,
   sendResult: "",
   commandOpen: false,
   commandStage: "list",
@@ -66,10 +62,10 @@ function watchChrome() {
 }
 
 function paintShell() {
-  app.innerHTML = shellHtml(article);
-  fillShell(app, article, posts);
+  app.innerHTML = shellHtml(state.article);
+  fillShell(app, state.article, posts);
   mountSplit(app, state.split);
-  fillPosts(app, posts, article.published, state.accounts.x);
+  fillPosts(app, posts, state.article.published, state.accounts.x);
   watchChrome();
   sync();
 }
@@ -105,7 +101,9 @@ function routeFromPath(path) {
 
 function pathFor(route) {
   if (route === "search") return "/";
-  if (route === "browser") return "/read";
+  const page = state.article.url ? `?u=${encodeURIComponent(state.article.url)}` : "";
+  if (route === "browser") return `/read${page}`;
+  if (route === "original") return `/original${page}`;
   return `/${route}`;
 }
 
@@ -116,7 +114,7 @@ function focusRoute() {
 function go(route) {
   if (route === "wallet" && state.route !== "wallet") state.back = state.route;
   const path = pathFor(route);
-  if (location.pathname !== path) history.pushState({ route }, "", path);
+  if (location.pathname + location.search !== path) history.pushState({ route }, "", path);
   const leavingWallet = state.route === "wallet" && route !== "wallet";
   if (leavingWallet) destroyWallet();
   state.route = route;
@@ -154,14 +152,95 @@ function setSplit(on) {
     }
   }
   state.split = on;
-  writeSplit(article.id, on);
+  writeSplit(state.article.id, on);
   const button = win.querySelector(".hamburger");
   if (button) {
     button.setAttribute("aria-pressed", String(on));
     button.setAttribute("aria-label", on ? "Collapse to one pane" : "Split into three panes");
   }
-  fillPosts(app, posts, article.published, state.accounts.x);
+  fillPosts(app, posts, state.article.published, state.accounts.x);
   sync();
+}
+
+// Repaints the page regions after the article changes.
+function refill() {
+  if (!document.querySelector(".window")) return;
+  fillShell(app, state.article, posts);
+  fillPosts(app, posts, state.article.published, state.accounts.x);
+  sync();
+}
+
+let pageToken = 0;
+
+async function openPage(url, { push = true } = {}) {
+  const token = ++pageToken;
+  const path = `/read?u=${encodeURIComponent(url)}`;
+  if (push && location.pathname + location.search !== path) history.pushState({ route: "browser" }, "", path);
+  state.article = emptyArticle(url, "loading");
+  state.split = false;
+  if (state.route === "wallet") destroyWallet();
+  state.route = "browser";
+  closeOverlays();
+  if (!document.querySelector(".window")) paintShell();
+  mountSplit(app, false);
+  refill();
+  const article = await loadArticle(url);
+  if (token !== pageToken) return;
+  state.article = article;
+  state.split = article.status === "done" && readSplit(article.id);
+  mountSplit(app, state.split);
+  let host = "";
+  try { host = new URL(url).hostname; } catch { host = url; }
+  ledger.add({
+    id: `read-${token}`,
+    klass: "medium",
+    kind: "Page fetch",
+    host,
+    result: "allowed",
+    detail: article.status === "done"
+      ? "BROK's server fetched the page for you. No cookies or account were sent."
+      : `BROK's server asked for the page. ${article.error}`,
+  });
+  // The ledger shows newest first, so add low risk first and high risk lands on top.
+  for (const row of [...article.blocked].reverse()) {
+    ledger.add({
+      id: `read-${token}-${row.host}`,
+      klass: row.klass,
+      kind: row.kind,
+      host: row.host,
+      result: "would-have",
+      detail: `The page asked for this ${row.tag === "pixel" ? "pixel" : row.tag === "frame" ? "frame" : "script"}. It never loaded.`,
+    });
+  }
+  refill();
+  if (state.split && !state.onDevice) runSplit();
+}
+
+async function runSplit() {
+  const article = state.article;
+  if (!article.blocks.length || article.split.status === "loading" || article.split.status === "done") return;
+  article.split = { status: "loading" };
+  refill();
+  const words = article.blocks.reduce((n, block) => n + block.text.split(/\s+/).length, 0);
+  const result = await splitArticle(article);
+  ledger.add({
+    id: `split-${Date.now()}`,
+    klass: "medium",
+    kind: "Page text",
+    host: "Grok (ai-gateway.vercel.sh)",
+    result: "allowed",
+    detail: `You sent ${words} words of page text. No account was sent.${result.status === "error" ? ` ${result.error}` : ""}`,
+  });
+  if (state.article !== article) return;
+  if (result.status === "done") {
+    article.panes.fact.items = result.fact;
+    article.panes.opinion.items = result.opinion;
+    article.panes.notFact.items = result.notFact;
+    article.split = { status: "done", model: result.model };
+  } else {
+    article.split = result;
+  }
+  refill();
 }
 
 function toggleCommand() {
@@ -206,11 +285,9 @@ function runCommand() {
   state.commandOpen = false;
   state.commandStage = "list";
   if (id === "split") {
-    if (!state.onDevice) {
-      wouldHave("xai", "Claim text", "api.x.ai", "Not sent. Claim text only. The split stayed in the tab.");
-    }
     if (state.route === "original") go("browser");
     setSplit(!state.split);
+    if (state.split && !state.onDevice) runSplit();
     return;
   }
   if (id === "posts") {
@@ -247,7 +324,7 @@ function toggleAccount(id) {
         "Starlink sign-in reveals a dish cell, which is a location. Logged for that reason. Estimator, not a packet trace.",
     });
   }
-  fillPosts(app, posts, article.published, state.accounts.x);
+  fillPosts(app, posts, state.article.published, state.accounts.x);
   sync();
 }
 
@@ -255,6 +332,12 @@ app.addEventListener("click", (event) => {
   const target = event.target.closest("[data-action]");
   if (!target || !app.contains(target)) return;
   const action = target.dataset.action;
+  if (action === "open-page") {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+    event.preventDefault();
+    openPage(target.getAttribute("href"));
+    return;
+  }
   if (action.startsWith("wallet-")) {
     walletHandle(action, target);
     return;
@@ -319,10 +402,11 @@ app.addEventListener("click", (event) => {
     return;
   }
   if (action === "confirm-send") {
-    wouldHave("send", "Claim text", "api.x.ai", "Not sent. Claim text only.");
     state.pendingSend = false;
-    state.sendResult = "Recorded as would-have. Not sent.";
-    sync();
+    state.securityOpen = false;
+    if (state.route === "original") go("browser");
+    if (!state.split) setSplit(true);
+    runSplit();
     return;
   }
   if (action === "command-arm") {
@@ -390,8 +474,17 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+function pageParam() {
+  return new URLSearchParams(location.search).get("u") || "";
+}
+
 window.addEventListener("popstate", () => {
   const route = routeFromPath(location.pathname);
+  if ((route === "browser" || route === "original") && pageParam() && pageParam() !== state.article.url) {
+    openPage(pageParam(), { push: false });
+    if (route === "original") go("original");
+    return;
+  }
   if (state.route === "wallet" && route !== "wallet") destroyWallet();
   state.route = route;
   if (route === "wallet") paintWallet();
@@ -450,4 +543,9 @@ app.addEventListener("submit", (event) => {
 state.route = routeFromPath(location.pathname);
 if (state.route === "wallet") paintWallet();
 else paintShell();
+if (state.route !== "wallet" && pageParam()) {
+  const start = state.route;
+  openPage(pageParam(), { push: false });
+  if (start === "original") go("original");
+}
 focusRoute();

@@ -17,7 +17,7 @@ function resultsHtml(search) {
       let host = "";
       try { host = new URL(hit.url).host.replace(/^www\./, ""); } catch { host = ""; }
       return `<li>
-        <a class="hit" href="${esc(hit.url)}" target="_blank" rel="noreferrer">
+        <a class="hit" href="${esc(hit.url)}" data-action="open-page" rel="noreferrer">
           <p class="host">${esc(host)}</p>
           <h2>${esc(hit.title)}</h2>
           <p>${esc(hit.snippet)}</p>
@@ -132,7 +132,10 @@ export function syncShell(root, state, rows) {
   const closing = win.classList.contains("is-closing");
   const pageOn = Boolean(state.article?.url);
   const omnibox = win.querySelector(".omnibox");
-  if (omnibox) omnibox.hidden = !pageOn;
+  if (omnibox) {
+    omnibox.hidden = !pageOn;
+    omnibox.textContent = state.article?.url || "";
+  }
   const hamburger = win.querySelector(".hamburger");
   if (hamburger) hamburger.hidden = !pageOn;
   const meta = win.querySelector(".meta");
@@ -141,12 +144,6 @@ export function syncShell(root, state, rows) {
   quiet.hidden = state.accounts.x || state.split || closing;
   const rail = win.querySelector("#rail");
   rail.hidden = !state.accounts.x || state.split || closing || state.route === "original" || state.route === "search";
-  const inference = win.querySelector("#inference");
-  if (inference) {
-    inference.textContent = state.accounts.grok
-      ? "Grok is on. This pass is still a fixture. Nothing was sent."
-      : "Inference. This pass is a fixture. Nothing was sent.";
-  }
   win.querySelector("[data-blocked]").textContent = String(blockedCount(rows));
   const drawer = win.querySelector("#drawer");
   drawer.hidden = !state.ledgerOpen;

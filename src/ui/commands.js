@@ -3,13 +3,17 @@ export const commands = [
     id: "split",
     title: "Split",
     egress(state) {
-      const onDevice = state.onDevice
-        ? "On device. Nothing goes to api.x.ai."
-        : "A live pass would send claim text to api.x.ai. This build does not.";
+      if (state.onDevice) {
+        return {
+          destination: "None",
+          leaves: "Nothing. Keep it on this device is on.",
+          note: "The panes stay empty until you allow Grok in Security.",
+        };
+      }
       return {
-        destination: "None",
-        leaves: "Nothing. The split stays in this tab.",
-        note: onDevice,
+        destination: "Grok, through Vercel",
+        leaves: "The page text. No account.",
+        note: "Grok sorts the claims. A first pass, not a ruling.",
       };
     },
   },
@@ -53,7 +57,7 @@ export const commands = [
       return {
         destination: "None",
         leaves: "Nothing.",
-        note: "Only Send pane to Grok can leave, and only when you allow it.",
+        note: "Only Send page to Grok can leave, and only when you allow it.",
       };
     },
   },

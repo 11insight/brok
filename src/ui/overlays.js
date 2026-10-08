@@ -81,18 +81,18 @@ export function securityHtml(state) {
     ? `<div class="egress">
         <p class="eyebrow">Leaves this device</p>
         <dl class="facts">
-          <div><dt>To</dt><dd>api.x.ai</dd></div>
-          <div><dt>What</dt><dd>Claim text only</dd></div>
+          <div><dt>To</dt><dd>Grok, through Vercel</dd></div>
+          <div><dt>What</dt><dd>The page text only</dd></div>
         </dl>
-        <p class="payload">${esc(state.sendPreview)}</p>
-        <button type="button" class="btn primary" data-action="confirm-send">Log it, do not send</button>
+        <p class="payload">${esc(state.article?.title || "")}</p>
+        <button type="button" class="btn primary" data-action="confirm-send">Send it</button>
       </div>`
-    : `<button type="button" class="btn" data-action="ask-send" ${state.onDevice ? "disabled" : ""}>Send pane to Grok</button>`;
+    : `<button type="button" class="btn" data-action="ask-send" ${state.onDevice || !state.article?.blocks?.length ? "disabled" : ""}>Send page to Grok</button>`;
   return `${head("Security", state.onDevice ? "On device" : "Grok allowed")}
     <ul class="checks">
       <li>Trackers, pixels and replay are stopped first.</li>
       <li>The reader never clicks, types or reads cookies.</li>
-      <li>The claim split stays in this tab.</li>
+      <li>Page text goes to Grok only when you send it.</li>
     </ul>
     <div class="group">${switchHtml("toggle-device", "Keep it on this device", state.onDevice)}</div>
     ${confirm}
