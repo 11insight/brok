@@ -1,3 +1,4 @@
+import { robotsAllow } from "./robots.js";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
@@ -44,13 +45,39 @@ export async function assertPublicUrl(raw) {
 }
 
 const MAX_BYTES = 3 * 1024 * 1024;
-const UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36";
+// Brok says who it is. Sites can see it is a reader, find the code, and block
+// it in robots.txt with "User-agent: BrokReader".
+export const AGENT_TOKEN = "BrokReader";
+const UA = `Mozilla/5.0 (compatible; ${AGENT_TOKEN}/0.1; +https://github.com/11insight/brok)`;
+
+// robots.txt, read the way RFC 9309 says: missing or forbidden means no
+// rules, a server error means stay out.
+async function fetchRobots(href) {
+  let url = await assertPublicUrl(href);
+  for (let hop = 0; hop < 3; hop += 1) {
+    const res = await fetch(url, {
+      redirect: "manual",
+      headers: { "user-agent": UA, accept: "text/plain" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
+      url = await assertPublicUrl(new URL(res.headers.get("location"), url).href);
+      continue;
+    }
+    if (res.status >= 500) return "User-agent: *\nDisallow: /";
+    if (!res.ok) return null;
+    return (await res.text()).slice(0, 500000);
+  }
+  return null;
+}
 
 // Follows redirects by hand so every hop is checked, and caps the size.
 export async function fetchPage(raw) {
   let url = await assertPublicUrl(raw);
   for (let hop = 0; hop < 5; hop += 1) {
+    if (!(await robotsAllow(url, fetchRobots))) {
+      throw fail(403, "This site asks readers like Brok not to read this page.");
+    }
     const res = await fetch(url, {
       redirect: "manual",
       headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml", "accept-language": "en-US,en;q=0.8" },
@@ -61,6 +88,9 @@ export async function fetchPage(raw) {
     if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
       url = await assertPublicUrl(new URL(res.headers.get("location"), url).href);
       continue;
+    }
+    if (res.status === 401 || res.status === 403 || res.status === 429) {
+      throw fail(403, "This site does not let readers like Brok in.");
     }
     if (!res.ok) throw fail(502, `That site said ${res.status}.`);
     const type = res.headers.get("content-type") || "";
