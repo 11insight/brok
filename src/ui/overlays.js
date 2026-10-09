@@ -64,7 +64,6 @@ export function signinHtml(accounts) {
     .join("");
   return `${head("Sign in")}
     <div class="accounts">${rows}</div>
-    <p class="fine">Each one opens its own sign in page.</p>`;
 }
 
 export function securityHtml(state) {
