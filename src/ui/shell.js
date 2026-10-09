@@ -181,7 +181,7 @@ export function syncShell(root, state, rows) {
   settings.hidden = !state.settingsOpen;
   // Repaint only when something shown changes, so typing in the form survives.
   const settingsSig = state.settingsOpen
-    ? JSON.stringify([state.accent, state.modelMode, state.modelRev, state.article?.status])
+    ? JSON.stringify([state.accent, state.modelMode, state.modelRev, state.article?.status, state.brokStyle, state.riveReady])
     : "";
   if (settingsSig !== settings.dataset.sig) {
     settings.dataset.sig = settingsSig;

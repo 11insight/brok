@@ -1177,3 +1177,10 @@ button.official { cursor: pointer; }
 .brok-char .spark-light { fill: #fff; }
 .hero .brok-char { cursor: pointer; }
 .hero { pointer-events: auto; }
+.style-seg { display: flex; margin-bottom: var(--s-4); }
+.style-seg button { flex: 1; }
+.brok-fancy { position: relative; width: 128px; height: 128px; transition: width 0.4s cubic-bezier(.2,.9,.25,1), height 0.4s cubic-bezier(.2,.9,.25,1); cursor: pointer; }
+.brok-3d-canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: transform 0.4s cubic-bezier(.2,.9,.25,1); }
+.search.has-results .hero .brok-fancy { width: 64px; height: 64px; }
+.search.has-results .hero .brok-3d-canvas { transform: translate(-50%, -50%) scale(0.5); }
+@media (max-width: 600px) { .brok-fancy { width: 104px; height: 104px; } }

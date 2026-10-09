@@ -257,6 +257,22 @@ function modelHtml(state) {
     </form>`;
 }
 
+// How Brok looks on the search page.
+function styleHtml(state) {
+  const styles = [
+    ["drawn", "Drawn"],
+    ["3d", "3D"],
+    ...(state.riveReady ? [["rive", "Animated"]] : []),
+  ];
+  const buttons = styles
+    .map(
+      ([id, label]) => `<button type="button" role="tab" data-action="brok-style" data-style="${id}" aria-selected="${state.brokStyle === id}">${label}</button>`,
+    )
+    .join("");
+  return `<p class="eyebrow">Brok</p>
+    <div class="seg style-seg" role="tablist" aria-label="Brok style">${buttons}</div>`;
+}
+
 function settingsCommands(state) {
   return filteredCommands("", state.article?.status === "done")
     .filter((command) => command.id !== "settings")
@@ -276,6 +292,7 @@ export function settingsHtml(state) {
   return `${head("Settings")}
     <p class="eyebrow">Color</p>
     <div class="swatches">${swatches}</div>
+    ${styleHtml(state)}
     ${modelHtml(state)}
     <ul class="inset settings-list">${settingsCommands(state)}</ul>
     <details class="howto">
@@ -306,7 +323,7 @@ export function settingsHtml(state) {
         <div><dt>The wallet</dt><dd>Your address goes to publicnode.com to read your balance and send. Your phrase never leaves this tab.</dd></div>
         <div><dt>Vercel, our host</dt><dd>Sees your internet address when you load Brok. Not your searches or the pages you read.</dd></div>
         <div><dt>Brok keeps</dt><dd>Nothing. No accounts, no list of what you search or read.</dd></div>
-        <div><dt>This browser keeps</dt><dd>Your color and your view choice. While this tab is open, your X sign-in and any model key you added.</dd></div>
+        <div><dt>This browser keeps</dt><dd>Your color, view and Brok style. While this tab is open, your X sign-in and any model key you added.</dd></div>
       </dl>
       <p class="fine">Open the Sent list to see each one as it happens.</p>
     </details>

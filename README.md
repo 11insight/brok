@@ -79,3 +79,7 @@ version number. Every split shows the model and prompt version that made it. A
 ## Check the live site
 
 Settings shows the commit the live site was built from, linked to that exact code.
+
+## Brok, the character
+
+Settings, Brok: **Drawn** (animated in code, the default) or **3D** (three.js, loads only when picked). A hand-made Rive version shows up as **Animated** once `public/brok.riv` exists; see the [brief for animators](docs/brok-rive-brief.md).

@@ -14,6 +14,7 @@ import { fillPosts } from "./ui/article-html.js";
 import { commands, filteredCommands } from "./ui/commands.js";
 import { buzz, toast } from "./ui/toast.js";
 import { createCharacter } from "./ui/character.js";
+import { readStyle, writeStyle } from "./sidecar/brok-style.js";
 import { cleanUrl } from "./sidecar/clean-url.js";
 import { PRESETS, forgetOwnModel, listModels, saveOwnModel } from "./sidecar/own-model.js";
 import { finishXSignIn, isXCallback, signOutX, startXSignIn, xPostsFor, xSession } from "./sidecar/x-auth.js";
@@ -38,6 +39,8 @@ const state = {
   securityOpen: false,
   settingsOpen: false,
   modelMode: "",
+  brokStyle: readStyle(),
+  riveReady: false,
   modelRev: 0,
   accent: applyAccent(readAccent()),
   shelfOpen: false,
@@ -79,13 +82,48 @@ function watchChrome() {
 let brok = null;
 let brokMini = null;
 
+let mountToken = 0;
+
 function mountCharacters() {
+  const token = ++mountToken;
   brok?.stop();
   brokMini?.stop();
-  const big = app.querySelector(".hero .brok-char");
+  const hero = app.querySelector(".hero");
+  const big = hero?.querySelector(".brok-char");
   const small = app.querySelector(".brand .brok-char");
+  hero?.querySelector(".brok-fancy")?.remove();
+  if (big) big.style.display = "";
   brok = big ? createCharacter(big) : null;
   brokMini = small ? createCharacter(small) : null;
+  const style = readStyle();
+  if (hero && big && (style === "3d" || style === "rive")) mountFancy(style, hero, big, token);
+}
+
+// 3D and Rive load on demand. The drawn Brok stays until the new one is ready,
+// and comes back if the new one cannot load (no WebGL, no Rive file).
+async function mountFancy(style, hero, big, token) {
+  const wrap = document.createElement("div");
+  wrap.className = "brok-fancy";
+  try {
+    let next;
+    if (style === "3d") {
+      const { createCharacter3D } = await import("./ui/character3d.js");
+      if (token !== mountToken) return;
+      big.after(wrap);
+      next = createCharacter3D(wrap);
+    } else {
+      const { createCharacterRive, riveAvailable } = await import("./ui/character-rive.js");
+      if (!(await riveAvailable()) || token !== mountToken) throw new Error("No Rive file");
+      big.after(wrap);
+      next = await createCharacterRive(wrap);
+    }
+    if (token !== mountToken) return next.stop();
+    brok?.stop();
+    big.style.display = "none";
+    brok = next;
+  } catch {
+    wrap.remove();
+  }
 }
 
 // A win: the big Brok spins if you can see it, otherwise the small one does.
@@ -513,6 +551,13 @@ app.addEventListener("click", (event) => {
     toast("Forgotten. Splits use Brok's Grok.");
     return;
   }
+  if (action === "brok-style") {
+    writeStyle(target.dataset.style);
+    state.brokStyle = target.dataset.style;
+    mountCharacters();
+    sync();
+    return;
+  }
   if (action === "set-accent") {
     state.accent = applyAccent(target.dataset.accent);
     sync();
@@ -598,6 +643,8 @@ async function loadConfig() {
   try {
     const res = await fetch("/api/config", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
     if (res.ok) state.config = await res.json();
+    const riv = await fetch("/brok.riv", { method: "HEAD" });
+    state.riveReady = riv.ok && !/text\/html/.test(riv.headers.get("content-type") || "");
   } catch {
     // Offline. X sign-in stays hidden.
   }
@@ -699,7 +746,7 @@ app.addEventListener("focusout", (event) => {
   brok?.rest();
 });
 app.addEventListener("click", (event) => {
-  if (event.target.closest?.(".hero .brok-char")) {
+  if (event.target.closest?.(".hero .brok-char, .hero .brok-fancy")) {
     buzz(5);
     if (Math.random() < 0.35) brok?.spin();
     else brok?.wiggle();

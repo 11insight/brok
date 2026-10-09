@@ -14,8 +14,10 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@mozilla/readability": "^0.6.0",
+    "@rive-app/canvas": "^2.44.1",
     "@vercel/oidc": "^4.0.0",
     "linkedom": "^0.18.13",
+    "three": "^0.186.1",
     "viem": "^2.57.4"
   },
   "devDependencies": {
