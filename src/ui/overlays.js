@@ -6,6 +6,7 @@ import { grokMark, xMark } from "./official-marks.js";
 import { closeIcon, LOGO_INNER } from "./icons.js";
 import { ACCENTS } from "../sidecar/accent.js";
 import { PROMPT_URL, PROMPT_VERSION } from "../prompts/claims.js";
+import { PRESETS, currentOwnModel } from "../sidecar/own-model.js";
 
 function head(title, meta = "") {
   const sub = meta ? `<p class="pop-meta">${esc(meta)}</p>` : "";
@@ -175,8 +176,41 @@ function sourceHtml() {
         <div><dt>Code</dt><dd>${externalLink(REPO, "github.com/11insight/brok")}</dd></div>
         <div><dt>License</dt><dd>${externalLink(`${REPO}/blob/main/LICENSE`, "AGPL 3.0")}</dd></div>
         <div><dt>Grok prompt</dt><dd>${externalLink(PROMPT_URL, `Version ${PROMPT_VERSION}`)}</dd></div>
+        <div><dt>Run it at home</dt><dd>${externalLink(`${REPO}#run-it-at-home`, "How")}</dd></div>
       </dl>
     </section>`;
+}
+
+// Split with Brok's Grok, or your own model called straight from this browser.
+function modelHtml(state) {
+  const own = currentOwnModel() || {};
+  const mode = state.modelMode || (own.on ? "own" : "brok");
+  const tabs = `<div class="seg model-seg" role="tablist" aria-label="Split with">
+      <button type="button" role="tab" data-action="model-mode" data-mode="brok" aria-selected="${mode === "brok"}">Brok's Grok</button>
+      <button type="button" role="tab" data-action="model-mode" data-mode="own" aria-selected="${mode === "own"}">Your own</button>
+    </div>`;
+  if (mode !== "own") {
+    return `<p class="eyebrow">Split with</p>${tabs}
+      <p class="fine model-note">Page text goes through Brok's server to Grok. Brok pays for it.</p>`;
+  }
+  const presets = PRESETS.map(
+    (preset) => `<button type="button" class="btn sm" data-action="model-preset" data-preset="${esc(preset.id)}">${esc(preset.label)}</button>`,
+  ).join("");
+  return `<p class="eyebrow">Split with</p>${tabs}
+    <form class="model-form" id="model-form" autocomplete="off">
+      <div class="model-presets">${presets}</div>
+      <label>Address<input name="endpoint" type="url" spellcheck="false" placeholder="https://api.x.ai/v1" value="${esc(own.endpoint || "")}" /></label>
+      <label>Model<input name="model" list="model-list" spellcheck="false" placeholder="Tap Check to list them" value="${esc(own.model || "")}" /></label>
+      <datalist id="model-list"></datalist>
+      <label>Key<input name="key" type="password" spellcheck="false" placeholder="Not needed on your own computer" value="${esc(own.key || "")}" data-1p-ignore data-lpignore="true" /></label>
+      <label class="model-remember"><input name="remember" type="checkbox" ${own.remember ? "checked" : ""} /> Remember on this device</label>
+      <p class="fine model-status" id="model-status">${own.on ? `On. Splits go straight to ${esc(own.endpoint)}.` : "Your key stays in this browser. Brok's server never sees it."}</p>
+      <div class="model-actions">
+        <button type="button" class="btn" data-action="model-check">Check</button>
+        <button type="submit" class="btn primary">Use it</button>
+      </div>
+      ${own.on || own.key ? `<button type="button" class="btn ghost block" data-action="model-forget">Forget this and use Brok's Grok</button>` : ""}
+    </form>`;
 }
 
 function settingsCommands(state) {
@@ -198,6 +232,7 @@ export function settingsHtml(state) {
   return `${head("Settings")}
     <p class="eyebrow">Color</p>
     <div class="swatches">${swatches}</div>
+    ${modelHtml(state)}
     <ul class="inset settings-list">${settingsCommands(state)}</ul>
     <details class="howto">
       <summary>How to use Brok</summary>
@@ -222,7 +257,7 @@ export function settingsHtml(state) {
       <dl>
         <div><dt>When you search</dt><dd>Brok's server asks Bing for you. Bing sees Brok, not you.</dd></div>
         <div><dt>When you open a page</dt><dd>Brok's server gets the page. The site sees Brok, not you. Its trackers never load.</dd></div>
-        <div><dt>When you split</dt><dd>The page text goes to Vercel and xAI, the maker of Grok. Not your name or accounts.</dd></div>
+        <div><dt>When you split</dt><dd>The page text goes to Vercel and xAI, the maker of Grok. Not your name or accounts. Pick your own model above and it goes straight from your browser to that model instead.</dd></div>
         <div><dt>The wallet</dt><dd>Your address goes to publicnode.com to read your balance and send. Your phrase never leaves this tab.</dd></div>
         <div><dt>Vercel, our host</dt><dd>Sees your internet address when you load Brok. Not your searches or the pages you read.</dd></div>
         <div><dt>Brok keeps</dt><dd>Nothing. No accounts, no list of what you search or read.</dd></div>

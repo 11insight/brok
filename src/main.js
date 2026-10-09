@@ -14,6 +14,7 @@ import { fillPosts } from "./ui/article-html.js";
 import { commands, filteredCommands } from "./ui/commands.js";
 import { buzz, toast } from "./ui/toast.js";
 import { cleanUrl } from "./sidecar/clean-url.js";
+import { PRESETS, forgetOwnModel, listModels, saveOwnModel } from "./sidecar/own-model.js";
 import { fillShell, mountSplit, shellHtml, syncShell } from "./ui/shell.js";
 import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet, submitWallet } from "./ui/wallet.js";
 
@@ -31,6 +32,8 @@ const state = {
   signinOpen: false,
   securityOpen: false,
   settingsOpen: false,
+  modelMode: "",
+  modelRev: 0,
   accent: applyAccent(readAccent()),
   shelfOpen: false,
   pendingSend: false,
@@ -247,7 +250,7 @@ async function runSplit() {
     id: `split-${Date.now()}`,
     klass: "medium",
     kind: "Page text",
-    host: result.via || "Brok's server, then Vercel AI Gateway, then xAI",
+    host: result.sentTo || "Brok's server, then Vercel AI Gateway, then xAI",
     result: "allowed",
     detail: `${words} words of page text, to sort it. No account.${result.status === "error" ? ` ${result.error}` : ""}`,
   });
@@ -420,6 +423,37 @@ app.addEventListener("click", (event) => {
     sync();
     return;
   }
+  if (action === "model-mode") {
+    state.modelMode = target.dataset.mode;
+    if (state.modelMode === "brok") {
+      const form = readModelForm();
+      saveOwnModel({ ...form, on: false });
+    }
+    state.modelRev += 1;
+    refill();
+    return;
+  }
+  if (action === "model-preset") {
+    const preset = PRESETS.find((item) => item.id === target.dataset.preset);
+    const form = document.getElementById("model-form");
+    if (!preset || !form) return;
+    form.endpoint.value = preset.endpoint;
+    form.model.value = preset.model;
+    modelStatus(preset.needsKey ? "Paste your key, then tap Check." : "Tap Check to see the models on your computer.");
+    return;
+  }
+  if (action === "model-check") {
+    checkModels();
+    return;
+  }
+  if (action === "model-forget") {
+    forgetOwnModel();
+    state.modelMode = "brok";
+    state.modelRev += 1;
+    refill();
+    toast("Forgotten. Splits use Brok's Grok.");
+    return;
+  }
   if (action === "set-accent") {
     state.accent = applyAccent(target.dataset.accent);
     sync();
@@ -478,6 +512,58 @@ app.addEventListener("submit", (event) => {
   if (form?.id !== "import-form" && form?.id !== "send-form") return;
   event.preventDefault();
   submitWallet(form);
+});
+
+function readModelForm() {
+  const form = document.getElementById("model-form");
+  if (!form) return {};
+  return {
+    endpoint: form.endpoint.value,
+    model: form.model.value,
+    key: form.key.value,
+    remember: form.remember.checked,
+  };
+}
+
+function modelStatus(text) {
+  const node = document.getElementById("model-status");
+  if (node) node.textContent = text;
+}
+
+async function checkModels() {
+  const config = readModelForm();
+  config.endpoint = String(config.endpoint || "").trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//.test(config.endpoint)) return modelStatus("Type the address first.");
+  modelStatus("Checking.");
+  const result = await listModels(config);
+  ledger.add({
+    id: `models-${Date.now()}`,
+    klass: "low",
+    kind: "Model list",
+    host: `${new URL(config.endpoint).host}, straight from your browser`,
+    result: "allowed",
+    detail: config.key ? "Your key, to list the models it can use. Not through Brok." : "A request to list the models. No page text.",
+  });
+  if (!result.ok) return modelStatus(result.error);
+  const list = document.getElementById("model-list");
+  if (list) list.innerHTML = result.models.map((id) => `<option value="${id.replace(/"/g, "&quot;")}"></option>`).join("");
+  const form = document.getElementById("model-form");
+  if (form && !form.model.value && result.models.length) form.model.value = result.models[0];
+  modelStatus(result.models.length ? `${result.models.length} models found. Pick one, then tap Use it.` : "It answered, but listed no models.");
+}
+
+app.addEventListener("submit", (event) => {
+  if (event.target?.id !== "model-form") return;
+  event.preventDefault();
+  const config = readModelForm();
+  if (!/^https?:\/\//.test(String(config.endpoint || "").trim())) return modelStatus("Type the address first.");
+  if (!String(config.model || "").trim()) return modelStatus("Pick a model first. Tap Check to list them.");
+  const saved = saveOwnModel({ ...config, on: true });
+  state.modelMode = "own";
+  state.modelRev += 1;
+  refill();
+  buzz(8);
+  toast(`Splits now go straight to ${new URL(saved.endpoint).host}.`);
 });
 
 app.addEventListener("input", (event) => {

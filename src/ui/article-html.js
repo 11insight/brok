@@ -3,6 +3,7 @@ import { againstPage, formatWhen } from "./format.js";
 import { blockedListHtml, blockedSummary } from "./blocked.js";
 import { esc, externalLink } from "./dom.js";
 import { PROMPT_URL } from "../prompts/claims.js";
+import { currentOwnModel, hostOf } from "../sidecar/own-model.js";
 
 function hasPage(article) {
   return Boolean(article?.title || article?.blocks?.length);
@@ -104,6 +105,14 @@ export function modelName(model) {
   return name || "Grok";
 }
 
+function splitAsk() {
+  const own = currentOwnModel();
+  if (own?.on) {
+    return `<strong>Sort this page with ${esc(own.model)}.</strong> The page text goes straight from your browser to ${esc(hostOf(own.endpoint))}.`;
+  }
+  return "<strong>Sort this page with Grok.</strong> The page text goes to Grok. Your accounts do not.";
+}
+
 function splitBar(article) {
   const split = article.split || {};
   if (split.status === "loading") {
@@ -117,8 +126,8 @@ function splitBar(article) {
     return `<div class="split-bar is-done" id="inference"><p>Sorted by ${esc(modelName(split.model))}${prompt}${split.via ? `, ${esc(split.via)}` : ""}. A first pass, not a ruling. ${externalLink(PROMPT_URL, "See the prompt")}</p></div>`;
   }
   return `<div class="split-bar is-ask" id="inference">
-    <p><strong>Sort this page with Grok.</strong> The page text goes to Grok. Your accounts do not.</p>
-    <button type="button" class="btn primary sm" data-action="split-now">Split with Grok</button>
+    <p>${splitAsk()}</p>
+    <button type="button" class="btn primary sm" data-action="split-now">${currentOwnModel()?.on ? "Split it" : "Split with Grok"}</button>
   </div>`;
 }
 

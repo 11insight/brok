@@ -1,3 +1,5 @@
+import { currentOwnModel, hostOf, splitWithOwnModel } from "./own-model.js";
+
 const pane = (label, note) => ({ label, note, items: [] });
 
 function panes() {
@@ -58,8 +60,14 @@ export async function loadArticle(url) {
   };
 }
 
-// Sends the page text to Grok. Only called after the person allows it.
+// Sends the page text to the model. Only called after the person allows it.
+// Your own model, when set, is called straight from this browser.
 export async function splitArticle(article) {
+  const own = currentOwnModel();
+  if (own?.on && own.endpoint && own.model) {
+    const result = await splitWithOwnModel(own, article);
+    return { ...result, sentTo: `${hostOf(own.endpoint)}, straight from your browser` };
+  }
   try {
     const response = await fetch("/api/split", {
       method: "POST",

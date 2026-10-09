@@ -1,5 +1,5 @@
 import { getVercelOidcToken } from "@vercel/oidc";
-import { CLAIM_PROMPT, PROMPT_VERSION } from "../src/prompts/claims.js";
+import { CLAIM_PROMPT, PROMPT_VERSION, claimText, readClaims } from "../src/prompts/claims.js";
 import { fail } from "./net.js";
 
 // Grok through Vercel AI Gateway: on Vercel the deployment's OIDC token signs
@@ -16,34 +16,11 @@ async function gatewayToken() {
   }
 }
 
-const str = (value, max = 600) => String(value || "").replace(/\s*[—–]\s*/g, ", ").replace(/\s+/g, " ").trim().slice(0, max);
-
-const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
-
-function shape(raw) {
-  const list = (value) => (Array.isArray(value) ? value.slice(0, 8) : []);
-  const facts = list(raw.fact).map((item) => ({ text: str(item.text), source: str(item.source, 160) })).filter((item) => item.text);
-  // A fact needs a named source. Without one it is not fact, whatever the model said.
-  return {
-    fact: facts.filter((item) => item.source),
-    opinion: list(raw.opinion).map((item) => ({ speaker: cap(str(item.speaker, 120)), text: str(item.text) })).filter((item) => item.text),
-    notFact: [
-      ...list(raw.notFact).map((item) => ({ text: str(item.text) })).filter((item) => item.text),
-      ...facts.filter((item) => !item.source).map(({ text }) => ({ text })),
-    ],
-  };
-}
-
 export async function splitClaims(body) {
-  const title = str(body?.title, 300);
-  const text = (Array.isArray(body?.blocks) ? body.blocks : [])
-    .map((block) => str(block?.text, 2000))
-    .filter(Boolean)
-    .join("\n")
-    .slice(0, 24000);
-  if (!text) throw fail(400, "No page text.");
+  const input = claimText(body?.title, body?.blocks);
+  if (!input) throw fail(400, "No page text.");
   const token = await gatewayToken();
-  if (!token) throw fail(503, "Grok is not set up here.");
+  if (!token) throw fail(503, "Grok is not set up here. Use your own key in Settings.");
   const res = await fetch(GATEWAY, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
@@ -54,7 +31,7 @@ export async function splitClaims(body) {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: CLAIM_PROMPT },
-        { role: "user", content: `Title: ${title}\n\n${text}` },
+        { role: "user", content: input },
       ],
     }),
     signal: AbortSignal.timeout(45000),
@@ -63,11 +40,7 @@ export async function splitClaims(body) {
   });
   if (!res.ok) throw fail(502, `Grok said ${res.status}.`);
   const data = await res.json().catch(() => ({}));
-  const content = data?.choices?.[0]?.message?.content || "";
-  const json = content.slice(content.indexOf("{"), content.lastIndexOf("}") + 1);
-  try {
-    return { model: MODEL, promptVersion: PROMPT_VERSION, ...shape(JSON.parse(json)) };
-  } catch {
-    throw fail(502, "Grok sent back something unreadable.");
-  }
+  const claims = readClaims(data?.choices?.[0]?.message?.content);
+  if (!claims) throw fail(502, "Grok sent back something unreadable.");
+  return { model: MODEL, promptVersion: PROMPT_VERSION, ...claims };
 }

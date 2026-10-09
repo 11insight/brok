@@ -4,15 +4,21 @@ import { readRoute, searchRoute, splitRoute } from "./server/routes.js";
 
 const ROUTES = { "/api/search": searchRoute, "/api/read": readRoute, "/api/split": splitRoute };
 
+function serve(req, res, next) {
+  const route = ROUTES[new URL(req.url || "/", "http://127.0.0.1").pathname];
+  if (!route) return next();
+  route(req, res);
+}
+
+// The same routes run on your own computer, in dev and in preview.
 function api() {
   return {
     name: "brok-api",
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const route = ROUTES[new URL(req.url || "/", "http://127.0.0.1").pathname];
-        if (!route) return next();
-        route(req, res);
-      });
+      server.middlewares.use(serve);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(serve);
     },
   };
 }

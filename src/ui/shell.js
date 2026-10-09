@@ -175,7 +175,14 @@ export function syncShell(root, state, rows) {
   if (state.securityOpen) security.innerHTML = securityHtml(state);
   const settings = win.querySelector("#settings");
   settings.hidden = !state.settingsOpen;
-  if (state.settingsOpen) settings.innerHTML = settingsHtml(state);
+  // Repaint only when something shown changes, so typing in the form survives.
+  const settingsSig = state.settingsOpen
+    ? JSON.stringify([state.accent, state.modelMode, state.modelRev, state.article?.status])
+    : "";
+  if (settingsSig !== settings.dataset.sig) {
+    settings.dataset.sig = settingsSig;
+    if (state.settingsOpen) settings.innerHTML = settingsHtml(state);
+  }
   const shelf = win.querySelector("#shelf");
   shelf.hidden = !state.shelfOpen;
   if (state.shelfOpen) shelf.innerHTML = shelfHtml(state.article);

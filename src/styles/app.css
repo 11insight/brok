@@ -1139,3 +1139,24 @@ figcaption { margin-top: var(--s-2); color: var(--ink-dim); font-size: var(--t-s
 .howto > .fine:last-child { margin-bottom: var(--s-4); }
 .split-bar.is-done p { display: block; }
 .split-bar a { color: var(--ink); }
+
+.model-seg { display: flex; margin-bottom: var(--s-2); }
+.model-seg button { flex: 1; }
+.model-note { margin-bottom: var(--s-4); }
+.model-form { display: grid; gap: var(--s-2); margin-bottom: var(--s-4); }
+.model-presets { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.model-form label { display: grid; gap: 4px; color: var(--ink-dim); font-size: var(--t-micro); font-weight: 600; }
+.model-form input[type="url"], .model-form input:not([type]), .model-form input[type="password"], .model-form input[list] {
+  height: 40px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-control);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-2-edge);
+  color: var(--ink-strong);
+  font-size: var(--t-small);
+  font-weight: 400;
+}
+.model-form input:focus { outline: none; border-color: rgba(var(--indigo-rgb), 0.6); }
+.model-remember { display: flex !important; align-items: center; gap: var(--s-2); color: var(--ink) !important; font-size: var(--t-small) !important; font-weight: 400 !important; }
+.model-remember input { width: 18px; height: 18px; accent-color: var(--indigo); }
+.model-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
