@@ -57,7 +57,7 @@ export function shellHtml(article) {
   return `<div class="window" data-route="browser">
     <div class="chrome">
       <div class="toolbar">
-        <button type="button" class="brand" data-action="go" data-route="search" aria-label="Brok home">${brandMark}<span>Brok</span><small class="brand-tag">A browser powered by Grok</small></button>
+        <button type="button" class="brand" data-action="go" data-route="search" aria-label="Brok home">${brandMark}<span>Brok</span><small class="brand-tag">a browser powered by grok</small></button>
         <p class="omnibox"></p>
         <nav class="tools" aria-label="Tools">
           <button type="button" class="tool" data-action="open-ledger"><span class="count" data-blocked>0</span><span class="tool-word">Blocked</span></button>
