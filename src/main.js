@@ -7,6 +7,7 @@ import "./styles/app.css";
 
 import { posts } from "./fixtures/cites.js";
 import { applyAccent, readAccent } from "./sidecar/accent.js";
+import { getAnswer } from "./sidecar/answer.js";
 import { emptyArticle, loadArticle, splitArticle } from "./sidecar/article.js";
 import { createLedger } from "./sidecar/ledger.js";
 import { readSplit, writeSplit } from "./sidecar/split-memory.js";
@@ -53,6 +54,7 @@ const state = {
   commandId: "",
   commandEgress: null,
   search: { query: "", status: "idle", results: [], error: "" },
+  answer: { status: "idle" },
 };
 
 const app = document.querySelector("#app");
@@ -424,6 +426,11 @@ app.addEventListener("click", (event) => {
   const action = target.dataset.action;
   if (action === "view") {
     showView(target.dataset.view);
+    return;
+  }
+  if (action === "answer-now") {
+    buzz(8);
+    runAnswer();
     return;
   }
   if (action === "split-now") {
@@ -848,6 +855,7 @@ let searchToken = 0;
 async function runSearch(query) {
   const token = ++searchToken;
   state.search = { query, status: "loading", results: [], error: "" };
+  state.answer = { status: "idle" };
   sync();
   let failed = false;
   let engine = "the search engine";
@@ -886,6 +894,47 @@ async function runSearch(query) {
     result: "allowed",
     detail: `"${query.slice(0, 80)}". ${engine} saw Brok's server, not you.${failed ? " No results came back." : ""}`,
   });
+  if (failed || token !== searchToken || !state.search.results.length) return;
+  if (state.onDevice) {
+    state.answer = { status: "ask" };
+    sync();
+  } else {
+    runAnswer();
+  }
+}
+
+// Grok's quick answer for the current search.
+async function runAnswer() {
+  const token = searchToken;
+  const { query, results } = state.search;
+  if (!query || state.answer.status === "loading") return;
+  state.answer = { status: "loading" };
+  brok?.think(true);
+  sync();
+  const result = await getAnswer(query, results.slice(0, 4).map((hit) => hit.url));
+  brok?.think(false);
+  ledger.add({
+    id: `answer-read-${Date.now()}`,
+    klass: "medium",
+    kind: "Pages for an answer",
+    host: "Brok's server, then news and web sites",
+    result: "allowed",
+    detail: "Brok's server searched the news and read the top pages as BrokReader. The sites saw Brok, not you.",
+  });
+  if (result.status === "done") {
+    ledger.add({
+      id: `answer-${Date.now()}`,
+      klass: "medium",
+      kind: "Question and page text",
+      host: result.sentTo || "Brok's server, then Vercel AI Gateway, then xAI",
+      result: "allowed",
+      detail: `"${query.slice(0, 80)}" and the text of ${result.sources.length} pages, to answer it. No account.`,
+    });
+  }
+  if (token !== searchToken) return;
+  state.answer = result;
+  if (result.status === "done") celebrate();
+  sync();
 }
 
 app.addEventListener("submit", (event) => {

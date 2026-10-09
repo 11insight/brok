@@ -48,6 +48,7 @@ Running at home with Brok's own Grok instead needs an `AI_GATEWAY_API_KEY` from 
 |---|---|---|
 | Search | Brok's server, then Brave Search | Your search words. Brave sees Brok, not you. |
 | Open a page | Brok's server, then the site | The page address. The site sees Brok, not you. Its trackers never load. |
+| Get a quick answer | Brok's server, news and web sites, then Grok | Your question and the text of the pages it read. No name, no account. |
 | Split with Brok's Grok | Brok's server, Vercel AI Gateway, xAI | The page text. No name, no account. |
 | Split with your own model | Only that model | The page text, straight from your browser. |
 | Sign in with X, then Show posts | Brok's server, then X | Your X sign-in and the page address. Brok keeps neither. |
@@ -72,8 +73,8 @@ Disallow: /
 
 ## How Brok sorts claims
 
-The exact prompt is in [`src/prompts/claims.js`](src/prompts/claims.js), with a
-version number. Every split shows the model and prompt version that made it. A
+The exact prompts are in [`src/prompts/claims.js`](src/prompts/claims.js) and
+[`src/prompts/answer.js`](src/prompts/answer.js), each with a version number. Every split shows the model and prompt version that made it. A
 "fact" with no named source is moved to Not fact, whatever the model said.
 
 ## Check the live site

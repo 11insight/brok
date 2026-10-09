@@ -1,7 +1,8 @@
 import { starlinkFixture } from "../fixtures/accounts.js";
 import { quotesFor } from "../fixtures/ticker.js";
 import { columnsHtml, fillPosts, originalHtml, singleHtml } from "./article-html.js";
-import { esc } from "./dom.js";
+import { esc, externalLink } from "./dom.js";
+import { ANSWER_URL } from "../prompts/answer.js";
 import { arrowIcon, brandMarkHtml, gearIcon, searchIcon } from "./icons.js";
 import { blockedCount, commandHtml, drawerHtml, securityHtml, settingsHtml, shelfHtml, signinHtml, xRailHtml } from "./overlays.js";
 
@@ -28,7 +29,62 @@ function resultsHtml(search) {
   return `<ol class="hits">${items}</ol>`;
 }
 
-export function paintSearch(root, search) {
+function dayLabel(iso) {
+  if (!iso || !Date.parse(iso)) return "";
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function modelLabel(model) {
+  return String(model || "Grok").replace(/^[^/]+\//, "").replace(/-non-reasoning$/, "").split("-")
+    .map((w) => (/^\d/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
+}
+
+// Grok's quick answer, above the results. Every fact links to its source.
+function answerHtml(answer) {
+  if (!answer || answer.status === "idle") return "";
+  if (answer.status === "ask") {
+    return `<section class="answer is-ask">
+      <p><strong>Get a quick answer.</strong> Grok reads the news and the top results, then answers with sources.</p>
+      <button type="button" class="btn primary sm" data-action="answer-now">Answer with Grok</button>
+    </section>`;
+  }
+  if (answer.status === "loading") {
+    return `<section class="answer" aria-busy="true">
+      <p class="answer-head"><span class="spin" aria-hidden="true"></span>Reading the news and top results</p>
+      <div class="claim-ghost"><i></i><i></i><i></i></div>
+    </section>`;
+  }
+  if (answer.status === "error") {
+    return `<section class="answer is-problem">
+      <p>${esc(answer.error)}</p>
+      <button type="button" class="btn sm" data-action="answer-now">Try again</button>
+    </section>`;
+  }
+  const sources = answer.sources || [];
+  const text = esc(answer.answer).replace(/\[(\d+)\]/g, (m, n) => {
+    const source = sources[Number(n) - 1];
+    return source
+      ? `<a class="cite" href="${esc(source.url)}" data-action="open-page" title="${esc(source.title)}">${n}</a>`
+      : "";
+  });
+  const list = sources
+    .map(
+      (source, i) => `<li${answer.cited?.includes(i + 1) ? ' class="is-cited"' : ""}>
+        <span class="cite-n">${i + 1}</span>
+        <a href="${esc(source.url)}" data-action="open-page">${esc(source.title)}</a>
+        <span class="src-meta">${esc([source.site, dayLabel(source.published), source.read === "summary" ? "headline and summary only" : ""].filter(Boolean).join(", "))}</span>
+      </li>`,
+    )
+    .join("");
+  return `<section class="answer">
+    <p class="answer-head">Quick answer</p>
+    <p class="answer-text">${text}</p>
+    <ol class="answer-sources">${list}</ol>
+    <p class="fine">${esc(modelLabel(answer.model))}, answer prompt version ${esc(answer.promptVersion || "1")}. Check the sources. ${externalLink(ANSWER_URL, "See the prompt")}</p>
+  </section>`;
+}
+
+export function paintSearch(root, search, answer) {
   const form = root.querySelector("form.search");
   const box = root.querySelector("#results");
   if (!form || !box) return;
@@ -37,10 +93,14 @@ export function paintSearch(root, search) {
   if (!active) {
     box.hidden = true;
     box.innerHTML = "";
+    box.dataset.sig = "";
     return;
   }
   box.hidden = false;
-  box.innerHTML = resultsHtml(search);
+  const sig = JSON.stringify([search, answer]);
+  if (sig === box.dataset.sig) return;
+  box.dataset.sig = sig;
+  box.innerHTML = (search.status === "done" && search.results?.length ? answerHtml(answer) : "") + resultsHtml(search);
 }
 
 export function shellHtml(article) {
@@ -216,7 +276,7 @@ export function syncShell(root, state, rows) {
     }
   }
   document.title = state.route === "original" ? "BROK Original" : state.route === "search" ? "BROK" : "BROK Reader";
-  paintSearch(root, state.search);
+  paintSearch(root, state.search, state.answer);
 }
 
 export function mountSplit(root, split) {

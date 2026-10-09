@@ -1,9 +1,22 @@
 {
   "functions": {
-    "api/read.js": { "maxDuration": 30 },
-    "api/split.js": { "maxDuration": 60 }
+    "api/read.js": {
+      "maxDuration": 30
+    },
+    "api/split.js": {
+      "maxDuration": 60
+    },
+    "api/answer.js": {
+      "maxDuration": 60
+    },
+    "api/sources.js": {
+      "maxDuration": 30
+    }
   },
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ]
 }

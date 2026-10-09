@@ -100,6 +100,41 @@ export async function listModels(config) {
   return { ok: true, models };
 }
 
+// Asks your model one question with a system prompt. Returns the reply text.
+export async function askOwnModel(config, system, user, maxTokens = 2000) {
+  const body = {
+    model: config.model,
+    temperature: 0,
+    max_tokens: maxTokens,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+  };
+  const call = (payload) =>
+    fetch(`${config.endpoint}/chat/completions`, {
+      method: "POST",
+      headers: headers(config),
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(120000),
+    });
+  let res;
+  try {
+    res = await call(body);
+    if (res.status === 400) {
+      const { response_format: _skip, ...plain } = body;
+      res = await call(plain);
+    }
+  } catch {
+    return { ok: false, error: reachError(config) };
+  }
+  if (res.status === 401 || res.status === 403) return { ok: false, error: "That key was not accepted." };
+  if (!res.ok) return { ok: false, error: `${hostOf(config.endpoint)} said ${res.status}.` };
+  const data = await res.json().catch(() => ({}));
+  return { ok: true, content: data?.choices?.[0]?.message?.content || "" };
+}
+
 export async function splitWithOwnModel(config, article) {
   const input = claimText(article.title, article.blocks);
   if (!input) return { status: "error", error: "No page text." };

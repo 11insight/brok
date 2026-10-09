@@ -1,3 +1,4 @@
+import { answerQuestion, sourcesOnly } from "./answer.js";
 import { splitClaims } from "./claims.js";
 import { readBody, sendJson } from "./net.js";
 import { readPage } from "./read.js";
@@ -30,3 +31,5 @@ export const xTokenRoute = post(xToken, "X sign in failed.");
 export const xMeRoute = post(xMe, "X failed.");
 export const xPostsRoute = post(xPosts, "X failed.");
 export const xRevokeRoute = post(xRevoke, "X failed.");
+export const answerRoute = post(answerQuestion, "The answer failed.");
+export const sourcesRoute = post(sourcesOnly, "Brok could not read the pages.");

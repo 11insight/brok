@@ -109,3 +109,50 @@ export async function searchWeb(raw) {
   if (!results.length) throw fail(502, "Search failed.");
   return { query, source: "bing.com", results };
 }
+
+// Fresh news for answers. Brave News with a key, else Bing's news feed.
+// Bing wraps links in a click tracker; the real address is pulled out.
+function unwrapBing(href) {
+  try {
+    const url = new URL(href);
+    if (url.hostname.endsWith("bing.com") && url.searchParams.get("url")) return url.searchParams.get("url");
+  } catch {
+    return "";
+  }
+  return href;
+}
+
+export async function searchNews(raw, limit = 6) {
+  const query = String(raw || "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 240);
+  if (!query) return [];
+  const key = process.env.BRAVE_API_KEY;
+  try {
+    if (key) {
+      const url = new URL("https://api.search.brave.com/res/v1/news/search");
+      url.searchParams.set("q", query);
+      url.searchParams.set("count", String(limit));
+      url.searchParams.set("freshness", "pw");
+      const res = await fetch(url, { headers: { accept: "application/json", "x-subscription-token": key }, signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return [];
+      const data = await res.json().catch(() => ({}));
+      return (data.results || []).slice(0, limit).map((item) => ({ title: decode(item.title || ""), url: item.url, snippet: decode(item.description || ""), age: item.age || "" }));
+    }
+    const url = new URL("https://www.bing.com/news/search");
+    url.searchParams.set("q", query);
+    url.searchParams.set("format", "rss");
+    const res = await fetch(url, { headers: { accept: "application/rss+xml, text/xml", "user-agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const out = [];
+    for (const match of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+      const href = unwrapBing(decode(tag(match[1], "link")));
+      const title = decode(tag(match[1], "title"));
+      if (!/^https?:/.test(href) || !title) continue;
+      out.push({ title, url: href, snippet: decode(tag(match[1], "description")), age: decode(tag(match[1], "pubDate")) });
+      if (out.length >= limit) break;
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}

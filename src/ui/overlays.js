@@ -318,6 +318,7 @@ export function settingsHtml(state) {
       <dl>
         <div><dt>When you search</dt><dd>Brok's server asks ${esc(state.config?.search || "the search engine")} for you. It sees Brok, not you.</dd></div>
         <div><dt>When you sign in with X</dt><dd>X sees your X account and the pages you look up posts for. Your sign-in stays in this tab. Brok's server passes it to X and keeps nothing.</dd></div>
+        <div><dt>When you get a quick answer</dt><dd>Brok's server searches the news and reads the top pages as BrokReader. Your question and that page text go to Grok, or straight to your own model if you picked one.</dd></div>
         <div><dt>When you open a page</dt><dd>Brok's server gets the page. The site sees Brok, not you. Its trackers never load.</dd></div>
         <div><dt>When you split</dt><dd>The page text goes to Vercel and xAI, the maker of Grok. Not your name or accounts. Pick your own model above and it goes straight from your browser to that model instead.</dd></div>
         <div><dt>The wallet</dt><dd>Your address goes to publicnode.com to read your balance and send. Your phrase never leaves this tab.</dd></div>
