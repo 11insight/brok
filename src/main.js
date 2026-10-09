@@ -12,6 +12,7 @@ import { createLedger } from "./sidecar/ledger.js";
 import { readSplit, writeSplit } from "./sidecar/split-memory.js";
 import { fillPosts } from "./ui/article-html.js";
 import { commands, filteredCommands } from "./ui/commands.js";
+import { buzz, toast } from "./ui/toast.js";
 import { fillShell, mountSplit, shellHtml, syncShell } from "./ui/shell.js";
 import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet, submitWallet } from "./ui/wallet.js";
 
@@ -133,7 +134,18 @@ function go(route) {
   if (route === "wallet") paintWallet();
   else if (!document.querySelector(".window")) paintShell();
   else sync();
+  enter();
   focusRoute();
+}
+
+// Each screen eases in, 10px up, the way Play Crypto pushes a page.
+function enter() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const node = state.route === "wallet" ? app.querySelector(".wallet") : app.querySelector(".stage");
+  node?.animate(
+    [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }],
+    { duration: 380, easing: "cubic-bezier(.2,.9,.25,1)" },
+  );
 }
 
 function setSplit(on) {
@@ -237,6 +249,8 @@ async function runSplit() {
     detail: `You sent ${words} words of page text. No account was sent.${result.status === "error" ? ` ${result.error}` : ""}`,
   });
   if (state.article !== article) return;
+  buzz(30);
+  toast(result.status === "done" ? "Split done." : result.error || "The split failed.");
   if (result.status === "done") {
     article.panes.fact.items = result.fact;
     article.panes.opinion.items = result.opinion;
@@ -268,53 +282,52 @@ function toggleCommand() {
 
 function arm(command) {
   if (!command) return;
-  const egress = command.egress(state);
+  const egress = command.egress?.(state);
   state.commandId = command.id;
+  if (!egress) {
+    runCommand();
+    return;
+  }
   state.commandStage = "egress";
   state.commandEgress = { title: command.title, ...egress };
   sync();
 }
 
-function wouldHave(id, kind, host, detail) {
-  ledger.add({
-    id: `${id}-${Date.now()}`,
-    klass: "api",
-    kind,
-    host,
-    result: "would-have",
-    detail,
-  });
+function showView(view) {
+  buzz(5);
+  if (view === "original") {
+    go("original");
+    return;
+  }
+  if (state.route !== "browser") go("browser");
+  if (state.split !== (view === "split")) setSplit(view === "split");
+  if (view === "split" && !state.onDevice) runSplit();
 }
 
 function runCommand() {
   const id = state.commandId;
-  state.commandOpen = false;
-  state.commandStage = "list";
+  closeOverlays();
+  if (id === "search") {
+    go("search");
+    return;
+  }
+  if (id === "reader" || id === "original") {
+    showView(id);
+    return;
+  }
   if (id === "split") {
-    if (state.route === "original") go("browser");
-    setSplit(!state.split);
-    if (state.split && !state.onDevice) runSplit();
+    showView("split");
+    runSplit();
     return;
   }
-  if (id === "posts") {
-    wouldHave("xapi", "Post text", "api.x.com", "Not sent. Post text only.");
-    sync();
+  if (id === "wallet") {
+    go("wallet");
     return;
   }
-  if (id === "grokipedia") {
-    state.shelfOpen = true;
-    sync();
-    return;
-  }
-  if (id === "ledger") {
-    state.ledgerOpen = true;
-    sync();
-    return;
-  }
-  if (id === "security") {
-    state.securityOpen = true;
-    sync();
-  }
+  if (id === "ledger") state.ledgerOpen = true;
+  if (id === "security") state.securityOpen = true;
+  if (id === "settings") state.settingsOpen = true;
+  sync();
 }
 
 function toggleAccount(id) {
@@ -338,6 +351,21 @@ app.addEventListener("click", (event) => {
   const target = event.target.closest("[data-action]");
   if (!target || !app.contains(target)) return;
   const action = target.dataset.action;
+  if (action === "view") {
+    showView(target.dataset.view);
+    return;
+  }
+  if (action === "split-now") {
+    buzz(8);
+    if (state.route !== "browser") go("browser");
+    if (!state.split) setSplit(true);
+    runSplit();
+    return;
+  }
+  if (action === "reload-page") {
+    if (state.article.url) openPage(state.article.url, { push: false });
+    return;
+  }
   if (action === "open-page") {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
     event.preventDefault();
@@ -477,7 +505,7 @@ document.addEventListener("keydown", (event) => {
     }
     return;
   }
-  const list = filteredCommands(state.commandQuery);
+  const list = filteredCommands(state.commandQuery, state.article?.status === "done");
   if (event.key === "ArrowDown") {
     event.preventDefault();
     const last = Math.max(list.length - 1, 0);
@@ -509,6 +537,7 @@ window.addEventListener("popstate", () => {
   if (route === "wallet") paintWallet();
   else if (!document.querySelector(".window")) paintShell();
   else sync();
+  enter();
   focusRoute();
 });
 

@@ -1,15 +1,14 @@
+// Commands run at once. Only a command that sends something off this device
+// stops first to say where it goes.
 export const commands = [
+  { id: "search", title: "New search", page: false },
+  { id: "reader", title: "Reader view", page: true },
   {
     id: "split",
-    title: "Split",
+    title: "Split with Grok",
+    page: true,
     egress(state) {
-      if (state.onDevice) {
-        return {
-          destination: "None",
-          leaves: "Nothing. Keep it on this device is on.",
-          note: "The panes stay empty until you allow Grok in Security.",
-        };
-      }
+      if (state.article?.split?.status === "done" || !state.onDevice) return null;
       return {
         destination: "Grok, through Vercel",
         leaves: "The page text. No account.",
@@ -17,54 +16,16 @@ export const commands = [
       };
     },
   },
-  {
-    id: "posts",
-    title: "Posts citing this URL",
-    egress() {
-      return {
-        destination: "api.x.com",
-        leaves: "The page address. Only post text comes back.",
-        note: "Not sent yet. Likes do not change the order.",
-      };
-    },
-  },
-  {
-    id: "grokipedia",
-    title: "Grokipedia",
-    egress() {
-      return {
-        destination: "grokipedia.com, if you open the link",
-        leaves: "Nothing until you open the link.",
-        note: "A reference, not a verdict.",
-      };
-    },
-  },
-  {
-    id: "ledger",
-    title: "Blocked list",
-    egress() {
-      return {
-        destination: "None",
-        leaves: "Nothing. The list stays in this tab.",
-        note: "Counts and kinds only. No identity.",
-      };
-    },
-  },
-  {
-    id: "security",
-    title: "Security",
-    egress() {
-      return {
-        destination: "None",
-        leaves: "Nothing.",
-        note: "Only Send page to Grok can leave, and only when you allow it.",
-      };
-    },
-  },
+  { id: "original", title: "What this page tried to load", page: true },
+  { id: "ledger", title: "Blocked list", page: false },
+  { id: "security", title: "Security", page: false },
+  { id: "settings", title: "Settings", page: false },
+  { id: "wallet", title: "Wallet", page: false },
 ];
 
-export function filteredCommands(query) {
+export function filteredCommands(query, hasPage = true) {
   const needle = query.trim().toLowerCase();
-  if (!needle) return commands;
-  return commands.filter((command) => command.title.toLowerCase().includes(needle));
+  return commands.filter(
+    (command) => (hasPage || !command.page) && (!needle || command.title.toLowerCase().includes(needle)),
+  );
 }

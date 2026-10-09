@@ -1,5 +1,6 @@
 import { claimLabels, railBlocks } from "../fixtures/cites.js";
 import { againstPage, formatWhen } from "./format.js";
+import { blockedListHtml, blockedSummary } from "./blocked.js";
 import { esc } from "./dom.js";
 
 function hasPage(article) {
@@ -8,13 +9,20 @@ function hasPage(article) {
 
 function emptyHtml(article) {
   if (article?.status === "loading") {
-    return `<article class="reader empty" aria-busy="true"><p>Reading the page.</p></article>`;
+    const lines = [92, 100, 96, 64, 0, 100, 88, 97, 72].map((w) => (w ? `<i style="width:${w}%"></i>` : "<b></b>")).join("");
+    return `<article class="reader skeleton" aria-busy="true" aria-label="Reading the page">
+      <i class="sk-kicker"></i><i class="sk-title"></i><i class="sk-title short"></i>${lines}
+    </article>`;
   }
   if (article?.status === "error") {
     const link = article.url
-      ? `<p><a href="${esc(article.url)}" target="_blank" rel="noreferrer">Open the original page</a></p>`
+      ? `<a class="btn" href="${esc(article.url)}" target="_blank" rel="noreferrer">Open the original</a>`
       : "";
-    return `<article class="reader empty"><p>${esc(article.error || "That page could not be read.")}</p>${link}</article>`;
+    return `<article class="reader empty problem">
+      <h2>Can’t read this page</h2>
+      <p>${esc(article.error || "That page could not be read.")}</p>
+      <div class="problem-actions"><button type="button" class="btn primary" data-action="reload-page">Try again</button>${link}</div>
+    </article>`;
   }
   return `<article class="reader empty"><p>No page loaded.</p></article>`;
 }
@@ -38,10 +46,7 @@ export function singleHtml(article) {
     : `<p class="empty">This page has no article text BROK can pull out.</p>`;
   const byline = article.byline ? `<p class="kicker">${esc(article.byline)}</p>` : "";
   return `<article class="reader">
-    <div class="article-top">
-      <p class="kicker">${kicker(article)}</p>
-      <button type="button" data-action="go" data-route="original">Original page</button>
-    </div>
+    <p class="kicker">${kicker(article)}</p>
     <h1>${esc(article.title)}</h1>
     ${byline}
     ${body}
@@ -87,12 +92,21 @@ export function postsRegion(posts, pageIso, xOn) {
   return blocksHtml(posts, pageIso);
 }
 
-function paneNote(article) {
+function splitBar(article) {
   const split = article.split || {};
-  if (split.status === "loading") return "Grok is reading the page.";
-  if (split.status === "error") return split.error || "The split failed.";
-  if (split.status === "done") return `Split by ${split.model || "Grok"}. A first pass, not a ruling.`;
-  return "Not split yet. Turn off Keep it on this device in Security, then send the page to Grok.";
+  if (split.status === "loading") {
+    return `<div class="split-bar" id="inference"><p><span class="spin" aria-hidden="true"></span>Grok is reading the page.</p></div>`;
+  }
+  if (split.status === "error") {
+    return `<div class="split-bar is-problem" id="inference"><p>${esc(split.error || "The split failed.")}</p><button type="button" class="btn sm" data-action="split-now">Try again</button></div>`;
+  }
+  if (split.status === "done") {
+    return `<div class="split-bar is-done" id="inference"><p>Sorted by Grok. A first pass, not a ruling.</p></div>`;
+  }
+  return `<div class="split-bar is-ask" id="inference">
+    <p><strong>Sort this page with Grok.</strong> The page text goes to Grok. Your accounts do not.</p>
+    <button type="button" class="btn primary sm" data-action="split-now">Split with Grok</button>
+  </div>`;
 }
 
 export function columnsHtml(article) {
@@ -123,17 +137,19 @@ export function columnsHtml(article) {
       </article>`,
     )
     .join("");
+  const loading = article.split?.status === "loading";
+  const ghost = `<div class="claim-ghost"><i></i><i></i><i></i></div>`.repeat(3);
   const pane = (key, data, items) => `<section class="pane" data-pane="${key}">
       <header class="pane-head">
         <h2>${esc(data.label)}</h2>
         <p>${esc(data.note)}</p>
       </header>
       <div class="pane-body">
-        ${items || `<p class="empty">Nothing here yet.</p>`}
+        ${loading ? ghost : items || `<p class="empty">${article.split?.status === "done" ? "None on this page." : "Nothing here yet."}</p>`}
         <div class="pane-posts" data-posts="${key}"></div>
       </div>
     </section>`;
-  return `<p class="inference" id="inference">${esc(paneNote(article))}</p>
+  return `${splitBar(article)}
     <div class="panes">
     ${pane("fact", panes.fact, factItems)}
     ${pane("opinion", panes.opinion, opinionItems)}
@@ -163,26 +179,15 @@ export function railHtml(posts, pageIso) {
 export function originalHtml(article) {
   if (!hasPage(article)) return emptyHtml(article);
   const blocked = article.blocked || [];
-  const slots = blocked.length
-    ? blocked
-        .map(
-          (row) => `<div class="blocked-slot">
-        <p class="flag">${esc(row.kind)}</p>
-        <p>${esc(row.host)}</p>
-      </div>`,
-        )
-        .join("")
-    : `<p class="empty">This page asked for no third parties.</p>`;
   return `<div class="original">
-    <p class="original-banner">BROK rebuilt this page from its text. These third parties never loaded.</p>
-    <div class="original-grid">
-      <article class="messy">
-        <button type="button" data-action="go" data-route="browser">Rebuilt page</button>
-        <p class="kicker">${kicker(article)}</p>
-        <h1>${esc(article.title)}</h1>
-        <p><a href="${esc(article.url)}" target="_blank" rel="noreferrer">Open the original in a new tab</a>. Its trackers will load there.</p>
-      </article>
-      <aside class="clutter">${slots}</aside>
-    </div>
+    <section class="receipt">
+      <p class="kicker">${kicker(article)}</p>
+      <h1>${esc(article.title)}</h1>
+      <p class="receipt-sum">${esc(blockedSummary(blocked))}</p>
+      <p>BROK read this page on its server and kept only the text. Nothing below ever reached your device.</p>
+      <a class="btn" href="${esc(article.url)}" target="_blank" rel="noreferrer">Open the original in a new tab</a>
+      <p class="fine">Its trackers will load there.</p>
+    </section>
+    <div class="receipt-list">${blockedListHtml(blocked, "This page asked for no third parties.")}</div>
   </div>`;
 }

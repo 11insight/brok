@@ -1,5 +1,6 @@
 import { accountLayers } from "../fixtures/accounts.js";
 import { filteredCommands } from "./commands.js";
+import { blockedListHtml } from "./blocked.js";
 import { esc, externalLink } from "./dom.js";
 import { grokMark, xMark } from "./official-marks.js";
 import { closeIcon, LOGO_INNER } from "./icons.js";
@@ -22,19 +23,8 @@ function klassLabel(klass) {
 
 export function drawerHtml(rows) {
   const blocked = rows.filter((row) => row.result === "would-have");
-  const list = blocked.length
-    ? blocked
-        .map(
-          (row) => `<article class="ledger-row" data-class="${esc(row.klass || "")}">
-            <div class="ledger-top"><h3>${esc(row.kind)}</h3><span class="chip">${esc(klassLabel(row.klass))}</span></div>
-            <p class="host">${esc(row.host)}</p>
-            <p>${esc(row.detail)}</p>
-          </article>`,
-        )
-        .join("")
-    : `<p class="empty">Nothing blocked.</p>`;
-  return `${head("Blocked", `${blocked.length} stopped before they loaded`)}
-    <div class="drawer-list">${list}</div>`;
+  return `${head("Blocked", blocked.length ? `${blocked.length} stopped before they loaded` : "")}
+    <div class="drawer-list">${blockedListHtml(blocked, "Nothing blocked yet. Open a page to see what it tries to load.")}</div>`;
 }
 
 const officialButtons = {
@@ -78,26 +68,14 @@ export function signinHtml(accounts) {
 }
 
 export function securityHtml(state) {
-  const confirm = state.pendingSend
-    ? `<div class="egress">
-        <p class="eyebrow">Leaves this device</p>
-        <dl class="facts">
-          <div><dt>To</dt><dd>Grok, through Vercel</dd></div>
-          <div><dt>What</dt><dd>The page text only</dd></div>
-        </dl>
-        <p class="payload">${esc(state.article?.title || "")}</p>
-        <button type="button" class="btn primary" data-action="confirm-send">Send it</button>
-      </div>`
-    : `<button type="button" class="btn" data-action="ask-send" ${state.onDevice || !state.article?.blocks?.length ? "disabled" : ""}>Send page to Grok</button>`;
-  return `${head("Security", state.onDevice ? "On device" : "Grok allowed")}
+  return `${head("Security")}
     <ul class="checks">
-      <li>Trackers, pixels and replay are stopped first.</li>
-      <li>The reader never clicks, types or reads cookies.</li>
-      <li>Page text goes to Grok only when you send it.</li>
+      <li>Ads, pixels and replay never reach your device.</li>
+      <li>Pages are read on BROK’s server, with no cookies.</li>
+      <li>Page text goes to Grok only when you split it.</li>
     </ul>
-    <div class="group">${switchHtml("toggle-device", "Keep it on this device", state.onDevice)}</div>
-    ${confirm}
-    <p class="fine" id="send-result">${esc(state.sendResult || "")}</p>`;
+    <div class="group">${switchHtml("toggle-device", "Ask before each split", state.onDevice)}</div>
+    <p class="fine">Turn this off and Split sends each new page to Grok without asking.</p>`;
 }
 
 function switchHtml(action, label, on, extra = "") {
@@ -135,7 +113,7 @@ export function commandHtml(state) {
         </div>
       </div>`;
   }
-  const list = filteredCommands(state.commandQuery);
+  const list = filteredCommands(state.commandQuery, state.article?.status === "done");
   const items = list.length
     ? list
         .map((command, index) => {

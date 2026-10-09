@@ -1,5 +1,6 @@
 import { externalLink, esc } from "./dom.js";
 import { backIcon } from "./icons.js";
+import { buzz, toast } from "./toast.js";
 import {
   RPC_HOST,
   broadcastSend,
@@ -31,6 +32,10 @@ let txHash = "";
 let busy = false;
 let balanceToken = 0;
 let balanceLogged = false;
+let wordsShown = false;
+let shake = false;
+
+const short = (address) => (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "");
 
 export function mount(node, options = {}) {
   host = node;
@@ -75,8 +80,15 @@ function paint() {
       <span class="chip net"><i class="dot"></i>Sepolia</span>
     </div>
     ${body()}
-    <p class="fine wallet-foot">Your phrase is never saved. Reload and the wallet is gone.</p>
+    ${mode === "ready" ? "" : `<p class="fine wallet-foot">Your phrase is never saved. Reload and the wallet is gone.</p>`}
   </div>`;
+  if (shake) {
+    shake = false;
+    host.querySelector(".note")?.closest("section")?.animate(
+      [{ transform: "translateX(0)" }, { transform: "translateX(-8px)" }, { transform: "translateX(8px)" }, { transform: "translateX(-4px)" }, { transform: "translateX(0)" }],
+      { duration: 400 },
+    );
+  }
 }
 
 function body() {
@@ -111,27 +123,35 @@ function revealHtml() {
   return `<section class="phrase">
     <h2>Write these down</h2>
     <p>They are gone from this page once you go on.</p>
-    <ol class="words">${list}</ol>
-    <button type="button" class="addr" data-action="wallet-copy" title="Copy address">${esc(getAddress())}</button>
-    <button type="button" class="btn primary block" data-action="wallet-clear">I wrote them down</button>
+    <div class="words-wrap${wordsShown ? " is-shown" : ""}">
+      <ol class="words">${list}</ol>
+      ${wordsShown ? "" : `<button type="button" class="words-cover" data-action="wallet-show-words">Tap to show your words<span>Make sure no one can see your screen.</span></button>`}
+    </div>
+    <button type="button" class="btn primary block" data-action="wallet-clear" ${wordsShown ? "" : "disabled"}>I wrote them down</button>
   </section>`;
 }
 
 function readyHtml() {
   const address = getAddress();
   const balance =
-    balanceState === "loading" ? "Reading balance." : balanceState === "error" ? "Balance did not come back." : balanceLabel;
+    balanceState === "loading" ? "" : balanceState === "error" ? "Can’t load" : balanceLabel.replace(" Sepolia ETH", "");
+  const retry =
+    balanceState === "error"
+      ? `<button type="button" class="link-btn" data-action="wallet-retry">Try again</button>`
+      : `<p class="unit">Sepolia ETH</p>`;
   const sent = txHash
     ? `<p class="sent">Sent. ${externalLink(`https://sepolia.etherscan.io/tx/${txHash}`, "View it")}</p>`
     : "";
   return `<section class="phrase balance-card">
     <p class="eyebrow">Balance</p>
-    <p class="balance" data-balance>${esc(balance)}</p>
-    <button type="button" class="addr" data-action="wallet-copy" title="Copy address">${esc(address)}</button>
-    <p class="links">
-      ${externalLink(`https://sepolia.etherscan.io/address/${address}`, "Etherscan", "btn sm")}
-      ${externalLink(FAUCET, "Get test ETH", "btn sm")}
-    </p>
+    <p class="balance${balanceState === "error" ? " is-problem" : ""}${balanceState === "loading" ? " is-loading" : ""}" data-balance>${esc(balance)}</p>
+    ${retry}
+    <p class="addr" title="${esc(address)}">${esc(short(address))}</p>
+    <div class="wallet-actions">
+      <button type="button" class="btn primary" data-action="wallet-copy">Copy address</button>
+      ${externalLink(`https://sepolia.etherscan.io/address/${address}`, "Etherscan", "btn")}
+      ${externalLink(FAUCET, "Get test ETH", "btn")}
+    </div>
   </section>
   <section class="phrase">
     <h2>Send</h2>
@@ -141,7 +161,7 @@ function readyHtml() {
         <input id="send-to" type="text" autocomplete="off" spellcheck="false" value="${esc(draftTo)}" />
       </div>
       <div class="field">
-        <label for="send-amount">Amount in ETH</label>
+        <label for="send-amount">Amount in ETH${balanceState === "done" ? `<span class="avail">You have ${esc(balanceLabel.replace(" Sepolia ETH", ""))}</span>` : ""}</label>
         <input id="send-amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(draftAmount)}" />
       </div>
       <button type="submit" class="btn primary block" ${busy ? "disabled" : ""}>${busy ? "Checking" : "Review"}</button>
@@ -177,16 +197,13 @@ function logEgress(row) {
 async function refreshBalance() {
   const token = ++balanceToken;
   balanceState = "loading";
-  const node = host?.querySelector("[data-balance]");
-  if (node) node.textContent = "Reading balance.";
-  else paint();
+  paint();
   try {
     const value = await readBalance();
     if (token !== balanceToken || !host || mode !== "ready") return;
     balanceLabel = formatSepolia(value);
     balanceState = "done";
-    const live = host.querySelector("[data-balance]");
-    if (live) live.textContent = balanceLabel;
+    paint();
     if (!balanceLogged) {
       balanceLogged = true;
       logEgress({
@@ -201,8 +218,7 @@ async function refreshBalance() {
   } catch {
     if (token !== balanceToken || !host || mode !== "ready") return;
     balanceState = "error";
-    const live = host.querySelector("[data-balance]");
-    if (live) live.textContent = "Balance did not come back.";
+    paint();
   }
 }
 
@@ -216,6 +232,7 @@ function publicError(error) {
 export function handle(action) {
   if (busy) return;
   if (action === "wallet-create") {
+    wordsShown = false;
     note = "";
     txHash = "";
     createWallet();
@@ -246,29 +263,31 @@ export function handle(action) {
   }
   if (action === "wallet-copy") {
     const address = getAddress();
-    if (!address || !navigator.clipboard) {
-      note = "Copy the address from the page.";
-      paint();
-      return;
-    }
-    navigator.clipboard.writeText(address).then(
-      () => {
-        note = "Address copied.";
-        paint();
-      },
-      () => {
-        note = "Copy the address from the page.";
-        paint();
-      },
-    );
+    const failed = () => toast("Copy did not work. Hold the address to copy it.");
+    if (!address || !navigator.clipboard) return failed();
+    navigator.clipboard.writeText(address).then(() => {
+      buzz(8);
+      toast("Address copied.");
+    }, failed);
+    return;
+  }
+  if (action === "wallet-show-words") {
+    wordsShown = true;
+    buzz(8);
+    paint();
+    return;
+  }
+  if (action === "wallet-retry") {
+    refreshBalance();
     return;
   }
   if (action === "wallet-cancel") {
     clearSend();
     pause = null;
     mode = "ready";
-    note = "Cancelled. Nothing was signed.";
+    note = "";
     paint();
+    toast("Cancelled. Nothing was signed.");
     return;
   }
   if (action === "wallet-continue") {
@@ -317,6 +336,8 @@ export function submitWallet(form) {
     const result = importPhrase(value);
     if (!result.ok) {
       note = result.error;
+      shake = true;
+      buzz(30);
       mode = "locked";
       paint();
       return;
@@ -345,6 +366,8 @@ async function reviewFrom(form) {
   if (!host) return;
   if (!result.ok) {
     clearSend();
+    shake = true;
+    buzz(30);
     note = result.error;
     mode = "ready";
     paint();

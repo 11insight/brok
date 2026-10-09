@@ -76,7 +76,7 @@
   --r-control: 12px;
   --r-row: 16px;
   --r-container: 22px;
-  --r-pill: 9999px; /* switches and dots only */
+  --r-pill: 8px; /* no fully round shapes in BROK */
 
   --measure: 68ch;
   --chrome-h: 76px;

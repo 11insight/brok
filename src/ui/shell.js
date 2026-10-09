@@ -58,10 +58,7 @@ export function shellHtml(article) {
     <div class="chrome">
       <div class="toolbar">
         <button type="button" class="brand" data-action="go" data-route="search" aria-label="BROK home">${brandMark}<span>BROK</span></button>
-        <button type="button" class="hamburger icon-btn" data-action="toggle-split" aria-pressed="false" aria-label="Split into three panes">
-          <span class="hb" aria-hidden="true"><i></i><i></i><i></i></span>
-        </button>
-        <p class="omnibox">${esc(article.url)}</p>
+        <p class="omnibox"></p>
         <nav class="tools" aria-label="Tools">
           <button type="button" class="tool" data-action="open-ledger"><span class="count" data-blocked>0</span><span class="tool-word">Blocked</span></button>
           <button type="button" class="tool" data-action="open-signin">Sign in</button>
@@ -73,7 +70,14 @@ export function shellHtml(article) {
     <div class="meta">
       <div class="stocks">${stocks}</div>
       <p class="strip" id="starlink" hidden></p>
-      <p class="strip" id="quiet">Cite rail quiet. No X account. Posts are not invented.</p>
+      <div class="viewbar">
+        <div class="seg" role="tablist" aria-label="View">
+          <button type="button" role="tab" data-action="view" data-view="reader">Reader</button>
+          <button type="button" role="tab" data-action="view" data-view="split">Split</button>
+          <button type="button" role="tab" data-action="view" data-view="original">Original</button>
+        </div>
+        <button type="button" class="viewbar-note" data-action="open-ledger" id="page-blocked"></button>
+      </div>
     </div>
     <div class="body">
       <div class="stage">
@@ -134,14 +138,29 @@ export function syncShell(root, state, rows) {
   const omnibox = win.querySelector(".omnibox");
   if (omnibox) {
     omnibox.hidden = !pageOn;
-    omnibox.textContent = state.article?.url || "";
+    let host = "";
+    let rest = "";
+    try {
+      const url = new URL(state.article.url);
+      host = url.hostname.replace(/^www\./, "");
+      rest = url.pathname === "/" ? "" : url.pathname;
+    } catch {
+      host = state.article?.url || "";
+    }
+    omnibox.innerHTML = `<span class="omni-host">${esc(host)}</span><span class="omni-path">${esc(rest)}</span>`;
   }
-  const hamburger = win.querySelector(".hamburger");
-  if (hamburger) hamburger.hidden = !pageOn;
+  const view = state.route === "original" ? "original" : state.split ? "split" : "reader";
+  win.querySelectorAll(".seg [data-view]").forEach((button) => {
+    button.setAttribute("aria-selected", String(button.dataset.view === view));
+  });
+  const pageBlocked = win.querySelector("#page-blocked");
+  if (pageBlocked) {
+    const count = state.article?.blocked?.length || 0;
+    pageBlocked.hidden = state.article?.status !== "done";
+    pageBlocked.textContent = count ? `${count} blocked on this page` : "Nothing to block";
+  }
   const meta = win.querySelector(".meta");
   if (meta) meta.hidden = !pageOn;
-  const quiet = win.querySelector("#quiet");
-  quiet.hidden = state.accounts.x || state.split || closing;
   const rail = win.querySelector("#rail");
   rail.hidden = !state.accounts.x || state.split || closing || state.route === "original" || state.route === "search";
   win.querySelector("[data-blocked]").textContent = String(blockedCount(rows));
