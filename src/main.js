@@ -8,6 +8,8 @@ import "./styles/app.css";
 import { posts } from "./fixtures/cites.js";
 import { applyAccent, readAccent } from "./sidecar/accent.js";
 import { getAnswer } from "./sidecar/answer.js";
+import { askAboutPage, checkPageClaims } from "./sidecar/ask.js";
+import { readBrief, readTopics, writeBrief, writeTopics } from "./sidecar/brief.js";
 import { emptyArticle, loadArticle, splitArticle } from "./sidecar/article.js";
 import { createLedger } from "./sidecar/ledger.js";
 import { readSplit, writeSplit } from "./sidecar/split-memory.js";
@@ -55,6 +57,8 @@ const state = {
   commandEgress: null,
   search: { query: "", status: "idle", results: [], error: "" },
   answer: { status: "idle" },
+  ask: { items: [] },
+  brief: { topics: readTopics(), items: readBrief()?.items || [] },
 };
 
 const app = document.querySelector("#app");
@@ -176,6 +180,7 @@ function routeFromPath(path) {
   if (path.startsWith("/wallet")) return "wallet";
   if (path.startsWith("/original")) return "original";
   if (path.startsWith("/read")) return "browser";
+  if (path.startsWith("/brief")) return "brief";
   return "search";
 }
 
@@ -271,6 +276,7 @@ async function openPage(raw, { push = true } = {}) {
   if (push && location.pathname + location.hash !== path) history.pushState({ route: "browser" }, "", path);
   state.article = emptyArticle(url, "loading");
   state.xPosts = { status: "idle" };
+  state.ask = { items: [] };
   state.split = false;
   if (state.route === "wallet") destroyWallet();
   state.route = "browser";
@@ -401,6 +407,10 @@ function runCommand() {
     runSplit();
     return;
   }
+  if (id === "brief") {
+    go("brief");
+    return;
+  }
   if (id === "wallet") {
     go("wallet");
     return;
@@ -426,6 +436,40 @@ app.addEventListener("click", (event) => {
   const action = target.dataset.action;
   if (action === "view") {
     showView(target.dataset.view);
+    return;
+  }
+  if (action === "topic-add" || action === "topic-remove") {
+    const topic = target.dataset.topic;
+    const topics = state.brief.topics.filter((item) => item !== topic);
+    if (action === "topic-add") topics.push(topic);
+    writeTopics(topics);
+    state.brief = { ...state.brief, topics };
+    sync();
+    return;
+  }
+  if (action === "brief-make") {
+    buzz(8);
+    makeBrief();
+    return;
+  }
+  if (action === "ask-fold" || action === "ask-unfold") {
+    if (action === "ask-unfold" && state.split) setSplit(false);
+    state.ask = { ...state.ask, folded: action === "ask-fold" };
+    sync();
+    return;
+  }
+  if (action === "ask-clear") {
+    state.ask = { items: [] };
+    sync();
+    return;
+  }
+  if (action === "jump-quote") {
+    jumpToQuote(target.dataset.quote);
+    return;
+  }
+  if (action === "check-claims") {
+    buzz(8);
+    runCheck();
     return;
   }
   if (action === "answer-now") {
@@ -697,6 +741,30 @@ async function checkModels() {
 }
 
 app.addEventListener("submit", (event) => {
+  if (event.target?.id !== "topic-form") return;
+  event.preventDefault();
+  const input = event.target.querySelector("#topic-q");
+  const topic = input.value.replace(/\s+/g, " ").trim().slice(0, 60);
+  if (!topic || state.brief.topics.includes(topic)) return;
+  const topics = [...state.brief.topics, topic].slice(0, 8);
+  writeTopics(topics);
+  state.brief = { ...state.brief, topics };
+  sync();
+  document.getElementById("topic-q")?.focus();
+});
+
+app.addEventListener("submit", (event) => {
+  if (event.target?.id !== "ask-form") return;
+  event.preventDefault();
+  const input = event.target.querySelector("#ask-q");
+  const question = input.value.trim();
+  if (!question || state.ask.items.some((item) => item.status === "loading")) return;
+  input.value = "";
+  buzz(5);
+  runAsk(question);
+});
+
+app.addEventListener("submit", (event) => {
   if (event.target?.id !== "model-form") return;
   event.preventDefault();
   const config = readModelForm();
@@ -901,6 +969,118 @@ async function runSearch(query) {
   } else {
     runAnswer();
   }
+}
+
+// One quick answer per topic, two at a time.
+async function makeBrief() {
+  const topics = state.brief.topics.slice(0, 8);
+  if (!topics.length) return;
+  const items = topics.map((topic) => ({ topic, status: "loading" }));
+  state.brief = { ...state.brief, items };
+  brokMini?.think?.(true);
+  sync();
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      const topic = items[index].topic;
+      const result = await getAnswer(`${topic} news today`, []);
+      ledger.add({
+        id: `brief-${index}-${Date.now()}`,
+        klass: "medium",
+        kind: "Briefing topic",
+        host: result.sentTo || "Brok's server, news sites, then Grok",
+        result: "allowed",
+        detail: `"${topic}". Brok's server searched the news, then the model answered from those pages. No account.`,
+      });
+      items[index] = { topic, ...result };
+      state.brief = { ...state.brief, items: [...items] };
+      sync();
+    }
+  };
+  await Promise.all([worker(), worker()]);
+  brokMini?.think?.(false);
+  writeBrief(items);
+  if (items.some((item) => item.status === "done")) celebrate();
+}
+
+// Shows where a quote sits in the article and flashes it.
+function jumpToQuote(quote) {
+  if (state.split) setSplit(false);
+  state.ask = { ...state.ask, folded: true };
+  sync();
+  if (state.route !== "browser") go("browser");
+  const needle = String(quote || "").replace(/\s+/g, " ").toLowerCase();
+  const node = [...app.querySelectorAll("#single .reader p, #single .reader h2, #single .reader blockquote")].find((el) =>
+    el.textContent.replace(/\s+/g, " ").toLowerCase().includes(needle),
+  );
+  if (!node) return;
+  node.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  node.classList.remove("flash");
+  void node.offsetWidth;
+  node.classList.add("flash");
+}
+
+async function runAsk(question) {
+  const article = state.article;
+  const history = state.ask.items.filter((item) => item.status === "done").map((item) => ({ q: item.q, a: item.answer }));
+  const item = { q: question, status: "loading" };
+  if (state.split) setSplit(false);
+  state.ask = { items: [...state.ask.items, item], folded: false };
+  brokMini?.think?.(true);
+  sync();
+  const result = await askAboutPage(article, history, question);
+  brokMini?.think?.(false);
+  ledger.add({
+    id: `ask-${Date.now()}`,
+    klass: "medium",
+    kind: "Question about a page",
+    host: result.sentTo || "Brok's server, then Vercel AI Gateway, then xAI",
+    result: "allowed",
+    detail: `"${question.slice(0, 80)}" and the page text, to answer it. No account.`,
+  });
+  if (state.article !== article) return;
+  state.ask = { ...state.ask, items: state.ask.items.map((row) => (row === item ? { q: question, ...result } : row)) };
+  if (result.status === "done") brokMini?.wiggle();
+  sync();
+}
+
+// Checks each Not fact line against other sites.
+async function runCheck() {
+  const article = state.article;
+  const claims = article.panes.notFact.items.map((item) => item.text).slice(0, 6);
+  if (!claims.length || article.check?.status === "loading") return;
+  article.check = { status: "loading" };
+  brokMini?.think?.(true);
+  refill();
+  const result = await checkPageClaims(article, claims);
+  brokMini?.think?.(false);
+  ledger.add({
+    id: `check-search-${Date.now()}`,
+    klass: "medium",
+    kind: "Claim search",
+    host: "Brok's server, then the search engine",
+    result: "allowed",
+    detail: `${claims.length} lines from the page, each searched on the web and in the news. The search engine saw Brok, not you.`,
+  });
+  if (result.status === "done") {
+    ledger.add({
+      id: `check-${Date.now()}`,
+      klass: "medium",
+      kind: "Lines and sources",
+      host: result.sentTo || "Brok's server, then Vercel AI Gateway, then xAI",
+      result: "allowed",
+      detail: "The lines and what the search found, to judge each one. No account.",
+    });
+  }
+  if (state.article !== article) return;
+  article.check = result;
+  if (result.status === "done") {
+    toast("Checked.");
+    celebrate();
+  }
+  refill();
 }
 
 // Grok's quick answer for the current search.

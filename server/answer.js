@@ -1,22 +1,11 @@
-import { getVercelOidcToken } from "@vercel/oidc";
 import { ANSWER_PROMPT, ANSWER_VERSION, answerInput, readAnswer } from "../src/prompts/answer.js";
 import { cleanUrl } from "../src/sidecar/clean-url.js";
-import { searchNews } from "../src/sidecar/web-search.js";
+import { searchNews, searchWeb } from "../src/sidecar/web-search.js";
+import { MODEL, askGrok } from "./grok.js";
 import { fail } from "./net.js";
 import { readPage } from "./read.js";
 
-const GATEWAY = "https://ai-gateway.vercel.sh/v1/chat/completions";
-const MODEL = process.env.BROK_SPLIT_MODEL || "spacexai/grok-4.1-fast-non-reasoning";
 const MAX_PAGES = 6;
-
-async function gatewayToken() {
-  if (process.env.AI_GATEWAY_API_KEY) return process.env.AI_GATEWAY_API_KEY;
-  try {
-    return await getVercelOidcToken();
-  } catch {
-    return null;
-  }
-}
 
 function hostOf(url) {
   try {
@@ -32,7 +21,9 @@ export async function gatherSources(body) {
   const question = String(body?.q || "").trim().slice(0, 240);
   if (!question) throw fail(400, "Type a search.");
   const news = await searchNews(question, 6);
-  const given = (Array.isArray(body?.urls) ? body.urls : []).slice(0, 6).map((url) => ({ url: String(url) }));
+  let given = (Array.isArray(body?.urls) ? body.urls : []).slice(0, 6).map((url) => ({ url: String(url) }));
+  // No results handed over (a briefing topic): search the web too.
+  if (!given.length) given = await searchWeb(question).then((data) => data.results.slice(0, 5)).catch(() => []);
   const seen = new Set();
   const picks = [];
   // Alternate the top web results with fresh news, so "what is" questions
@@ -77,29 +68,9 @@ export async function gatherSources(body) {
 
 export async function answerQuestion(body) {
   const { question, pages } = await gatherSources(body);
-  if (!pages.length) throw fail(404, "Brok could not read any pages for this. Try the results below.");
-  const token = await gatewayToken();
-  if (!token) throw fail(503, "Grok is not set up here. Use your own key in Settings.");
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0,
-      max_tokens: 600,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: ANSWER_PROMPT },
-        { role: "user", content: answerInput(question, pages) },
-      ],
-    }),
-    signal: AbortSignal.timeout(40000),
-  }).catch(() => {
-    throw fail(502, "Grok did not answer.");
-  });
-  if (!res.ok) throw fail(502, `Grok said ${res.status}.`);
-  const data = await res.json().catch(() => ({}));
-  const answer = readAnswer(data?.choices?.[0]?.message?.content, pages.length);
+  if (!pages.length) throw fail(404, "Brok could not read any pages for this.");
+  const content = await askGrok(ANSWER_PROMPT, answerInput(question, pages), 600, 40000);
+  const answer = readAnswer(content, pages.length);
   if (!answer) throw fail(502, "Grok sent back something unreadable.");
   return {
     model: MODEL,

@@ -3,6 +3,7 @@ import { againstPage, formatWhen } from "./format.js";
 import { blockedListHtml, blockedSummary } from "./blocked.js";
 import { esc, externalLink } from "./dom.js";
 import { PROMPT_URL } from "../prompts/claims.js";
+import { CHECK_URL } from "../prompts/check.js";
 import { currentOwnModel, hostOf } from "../sidecar/own-model.js";
 
 function hasPage(article) {
@@ -152,13 +153,35 @@ export function columnsHtml(article) {
         )
         .join("")}</div>`
     : "";
+  const check = article.check || { status: "idle" };
+  const verdictFor = (text) => (check.checks || []).find((row) => row.claim === text);
+  const LABEL = { backed: "Backed by a source", disputed: "Disputed by a source", unknown: "Not settled" };
   const notItems = panes.notFact.items
-    .map(
-      (item) => `<article class="claim">
+    .map((item) => {
+      const row = verdictFor(item.text);
+      const verdict = row
+        ? `<div class="verdict" data-verdict="${esc(row.verdict)}">
+            <p class="verdict-label">${esc(LABEL[row.verdict])}</p>
+            <p>${esc(row.why)}</p>
+            ${row.sources.length ? `<p class="verdict-src">${row.sources.map((src) => `<a href="${esc(src.url)}" data-action="open-page">${esc(src.site)}</a>`).join("")}</p>` : ""}
+          </div>`
+        : check.status === "loading"
+          ? `<div class="claim-ghost"><i></i><i></i></div>`
+          : "";
+      return `<article class="claim">
         <p class="unverified">${esc(item.text)}</p>
-      </article>`,
-    )
+        ${verdict}
+      </article>`;
+    })
     .join("");
+  const checkBar =
+    article.split?.status === "done" && panes.notFact.items.length
+      ? check.status === "done"
+        ? `<p class="check-note">Checked against other sites by ${esc(modelName(check.model))}, check prompt version ${esc(check.promptVersion || "1")}. ${externalLink(CHECK_URL, "See the prompt")}</p>`
+        : check.status === "loading"
+          ? `<p class="check-note"><span class="spin" aria-hidden="true"></span>Searching other sites for each line</p>`
+          : `<div class="check-ask">${check.status === "error" ? `<p>${esc(check.error)}</p>` : "<p>Search other sites for each line here.</p>"}<button type="button" class="btn sm" data-action="check-claims">${check.status === "error" ? "Try again" : "Check these"}</button></div>`
+      : "";
   const loading = article.split?.status === "loading";
   const ghost = `<div class="claim-ghost"><i></i><i></i><i></i></div>`.repeat(3);
   const pane = (key, data, items) => `<section class="pane" data-pane="${key}">
@@ -167,6 +190,7 @@ export function columnsHtml(article) {
         <p>${esc(data.note)}</p>
       </header>
       <div class="pane-body">
+        ${key === "not" ? checkBar : ""}
         ${loading ? ghost : items || `<p class="empty">${article.split?.status === "done" ? "None on this page." : "Nothing here yet."}</p>`}
         <div class="pane-posts" data-posts="${key}"></div>
       </div>

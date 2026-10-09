@@ -14,7 +14,7 @@ export async function getAnswer(question, urls) {
   if (own?.on && own.endpoint && own.model) {
     const { ok, data } = await post("/api/sources", { q: question, urls });
     if (!ok) return { status: "error", error: data.error || "Brok could not read the pages." };
-    if (!data.pages?.length) return { status: "error", error: "Brok could not read any pages for this. Try the results below." };
+    if (!data.pages?.length) return { status: "error", error: "Brok could not read any pages for this." };
     const reply = await askOwnModel(own, ANSWER_PROMPT, answerInput(question, data.pages), 600);
     if (!reply.ok) return { status: "error", error: reply.error };
     const answer = readAnswer(reply.content, data.pages.length);

@@ -4,6 +4,7 @@ import { currentOwnModel, hostOf } from "../sidecar/own-model.js";
 // stops first to say where it goes.
 export const commands = [
   { id: "search", title: "New search", page: false },
+  { id: "brief", title: "Morning briefing", page: false },
   { id: "reader", title: "Reader view", page: true },
   {
     id: "split",

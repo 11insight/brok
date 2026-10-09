@@ -324,7 +324,7 @@ export function settingsHtml(state) {
         <div><dt>The wallet</dt><dd>Your address goes to publicnode.com to read your balance and send. Your phrase never leaves this tab.</dd></div>
         <div><dt>Vercel, our host</dt><dd>Sees your internet address when you load Brok. Not your searches or the pages you read.</dd></div>
         <div><dt>Brok keeps</dt><dd>Nothing. No accounts, no list of what you search or read.</dd></div>
-        <div><dt>This browser keeps</dt><dd>Your color, view and Brok style. While this tab is open, your X sign-in and any model key you added.</dd></div>
+        <div><dt>This browser keeps</dt><dd>Your color, view and Brok style, your briefing topics and today's briefing. While this tab is open, your X sign-in and any model key you added.</dd></div>
       </dl>
       <p class="fine">Open the Sent list to see each one as it happens.</p>
     </details>

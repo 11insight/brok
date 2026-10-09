@@ -3,7 +3,9 @@ import { quotesFor } from "../fixtures/ticker.js";
 import { columnsHtml, fillPosts, originalHtml, singleHtml } from "./article-html.js";
 import { esc, externalLink } from "./dom.js";
 import { ANSWER_URL } from "../prompts/answer.js";
-import { arrowIcon, brandMarkHtml, gearIcon, searchIcon } from "./icons.js";
+import { ASK_URL } from "../prompts/ask.js";
+import { SUGGESTED } from "../sidecar/brief.js";
+import { arrowIcon, brandMarkHtml, closeIcon, gearIcon, searchIcon } from "./icons.js";
 import { blockedCount, commandHtml, drawerHtml, securityHtml, settingsHtml, shelfHtml, signinHtml, xRailHtml } from "./overlays.js";
 
 function resultsHtml(search) {
@@ -37,6 +39,61 @@ function dayLabel(iso) {
 function modelLabel(model) {
   return String(model || "Grok").replace(/^[^/]+\//, "").replace(/-non-reasoning$/, "").split("-")
     .map((w) => (/^\d/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
+}
+
+// The morning briefing: your topics, each with a quick answer from today's news.
+function briefHtml(brief) {
+  const topics = brief.topics || [];
+  const chips = topics
+    .map((topic) => `<span class="topic">${esc(topic)}<button type="button" data-action="topic-remove" data-topic="${esc(topic)}" aria-label="Remove ${esc(topic)}">${closeIcon}</button></span>`)
+    .join("");
+  const suggestions = SUGGESTED.filter((topic) => !topics.includes(topic))
+    .map((topic) => `<button type="button" class="topic topic-add" data-action="topic-add" data-topic="${esc(topic)}">+ ${esc(topic)}</button>`)
+    .join("");
+  const busy = (brief.items || []).some((item) => item.status === "loading");
+  const made = (brief.items || []).length > 0;
+  const cards = (brief.items || [])
+    .map((item) => `<div class="brief-item"><h2>${esc(item.topic)}</h2>${answerHtml(item.status === "done" || item.status === "error" || item.status === "loading" ? item : { status: "loading" })}</div>`)
+    .join("");
+  const date = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  return `<section class="brief">
+    <p class="kicker">${esc(date)}</p>
+    <h1>Your briefing</h1>
+    <div class="topics">${chips}${topics.length < 8 ? `<form class="topic-form" id="topic-form"><input id="topic-q" type="text" placeholder="Add a topic" maxlength="60" autocomplete="off" /></form>` : ""}</div>
+    ${suggestions ? `<div class="topics topics-suggest">${suggestions}</div>` : ""}
+    <button type="button" class="btn primary" data-action="brief-make" ${!topics.length || busy ? "disabled" : ""}>${busy ? "Making it" : made ? "Update my briefing" : "Make my briefing"}</button>
+    <p class="fine">Each topic is one quick answer from today's news, with sources. Your topics and today's briefing stay in this browser.</p>
+    <div class="brief-list">${cards}</div>
+  </section>`;
+}
+
+function askFoldedHtml(ask) {
+  const count = ask?.items?.length || 0;
+  return `<button type="button" class="ask-unfold" data-action="ask-unfold">About this page, ${count} ${count === 1 ? "answer" : "answers"}<span aria-hidden="true">Show</span></button>`;
+}
+
+// Questions about the page and Grok's answers, each backed by exact quotes.
+function askThreadHtml(ask) {
+  if (!ask?.items?.length) return "";
+  const items = ask.items
+    .map((item) => {
+      let reply;
+      if (item.status === "loading") reply = `<div class="claim-ghost"><i></i><i></i></div>`;
+      else if (item.status === "error") reply = `<p class="ask-error">${esc(item.error)}</p>`;
+      else {
+        const quotes = (item.quotes || [])
+          .map((quote) => `<button type="button" class="quote-btn" data-action="jump-quote" data-quote="${esc(quote)}">“${esc(quote)}”</button>`)
+          .join("");
+        reply = `<p>${esc(item.answer)}</p>${quotes ? `<div class="ask-quotes">${quotes}</div>` : ""}`;
+      }
+      return `<div class="ask-item"><p class="ask-q">${esc(item.q)}</p><div class="ask-a">${reply}</div></div>`;
+    })
+    .join("");
+  const last = ask.items[ask.items.length - 1];
+  const foot = last.model
+    ? `<p class="fine">${esc(modelLabel(last.model))}, ask prompt version ${esc(last.promptVersion || "1")}. Quotes are checked word for word against the page. ${externalLink(ASK_URL, "See the prompt")}</p>`
+    : "";
+  return `<header class="ask-head"><p>About this page</p><span><button type="button" class="btn ghost sm" data-action="ask-fold">Hide</button><button type="button" class="icon-btn" data-action="ask-clear" aria-label="Clear">${closeIcon}</button></span></header>${items}${foot}`;
 }
 
 // Grok's quick answer, above the results. Every fact links to its source.
@@ -149,13 +206,22 @@ export function shellHtml(article) {
             <input id="q" name="q" type="text" enterkeyhint="search" autocomplete="off" spellcheck="false" placeholder="What do you want to know?" />
             <button type="submit" class="go" aria-label="Search">${arrowIcon}</button>
           </div>
+          <button type="button" class="brief-link" data-action="go" data-route="brief">Your morning briefing</button>
           <div class="results" id="results" hidden></div>
         </form>
         <div class="single" id="single"></div>
         <div class="columns" id="columns"></div>
         <div id="original"></div>
+        <div id="brief"></div>
       </div>
       <aside class="rail" id="rail" hidden></aside>
+    </div>
+    <div class="askdock" id="askdock" hidden>
+      <div class="ask-thread" id="ask-thread"></div>
+      <form class="ask-form field-search" id="ask-form" autocomplete="off">
+        <input id="ask-q" type="text" enterkeyhint="send" spellcheck="true" placeholder="Ask Grok about this page" aria-label="Ask about this page" />
+        <button type="submit" class="go" aria-label="Ask">${arrowIcon}</button>
+      </form>
     </div>
     <aside class="drawer" id="drawer" hidden></aside>
     <div class="popover" id="signin" hidden></div>
@@ -237,6 +303,24 @@ export function syncShell(root, state, rows) {
   const security = win.querySelector("#security");
   security.hidden = !state.securityOpen;
   if (state.securityOpen) security.innerHTML = securityHtml(state);
+  const brief = win.querySelector("#brief");
+  const briefSig = state.route === "brief" ? JSON.stringify(state.brief) : "";
+  if (briefSig !== brief.dataset.sig) {
+    brief.dataset.sig = briefSig;
+    if (state.route === "brief") brief.innerHTML = briefHtml(state.brief);
+  }
+  const dock = win.querySelector("#askdock");
+  dock.hidden = state.route !== "browser" || state.article?.status !== "done" || !state.article?.blocks?.length;
+  const thread = win.querySelector("#ask-thread");
+  const folded = state.ask.folded || state.split;
+  const askSig = JSON.stringify([state.ask, folded]);
+  if (askSig !== thread.dataset.sig) {
+    thread.dataset.sig = askSig;
+    thread.innerHTML = folded ? askFoldedHtml(state.ask) : askThreadHtml(state.ask);
+    thread.classList.toggle("is-folded", folded);
+    thread.hidden = !state.ask.items.length;
+    thread.scrollTop = thread.scrollHeight;
+  }
   const settings = win.querySelector("#settings");
   settings.hidden = !state.settingsOpen;
   // Repaint only when something shown changes, so typing in the form survives.

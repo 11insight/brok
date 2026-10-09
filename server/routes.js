@@ -1,4 +1,5 @@
 import { answerQuestion, sourcesOnly } from "./answer.js";
+import { askPage, checkClaims, claimEvidence } from "./ask.js";
 import { splitClaims } from "./claims.js";
 import { readBody, sendJson } from "./net.js";
 import { readPage } from "./read.js";
@@ -33,3 +34,6 @@ export const xPostsRoute = post(xPosts, "X failed.");
 export const xRevokeRoute = post(xRevoke, "X failed.");
 export const answerRoute = post(answerQuestion, "The answer failed.");
 export const sourcesRoute = post(sourcesOnly, "Brok could not read the pages.");
+export const askRoute = post(askPage, "Asking failed.");
+export const checkRoute = post(checkClaims, "The check failed.");
+export const evidenceRoute = post(claimEvidence, "Brok could not find sources.");

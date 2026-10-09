@@ -11,6 +11,15 @@
     },
     "api/sources.js": {
       "maxDuration": 30
+    },
+    "api/ask.js": {
+      "maxDuration": 60
+    },
+    "api/check.js": {
+      "maxDuration": 60
+    },
+    "api/evidence.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [

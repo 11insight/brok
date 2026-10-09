@@ -2,6 +2,9 @@ import { execSync } from "node:child_process";
 import { defineConfig } from "vite";
 import {
   answerRoute,
+  askRoute,
+  checkRoute,
+  evidenceRoute,
   configRoute,
   sourcesRoute,
   readRoute,
@@ -19,6 +22,9 @@ const ROUTES = {
   "/api/split": splitRoute,
   "/api/config": configRoute,
   "/api/answer": answerRoute,
+  "/api/ask": askRoute,
+  "/api/check": checkRoute,
+  "/api/evidence": evidenceRoute,
   "/api/sources": sourcesRoute,
   "/api/x/token": xTokenRoute,
   "/api/x/me": xMeRoute,
