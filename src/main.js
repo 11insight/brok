@@ -13,6 +13,7 @@ import { readSplit, writeSplit } from "./sidecar/split-memory.js";
 import { fillPosts } from "./ui/article-html.js";
 import { commands, filteredCommands } from "./ui/commands.js";
 import { buzz, toast } from "./ui/toast.js";
+import { cleanUrl } from "./sidecar/clean-url.js";
 import { fillShell, mountSplit, shellHtml, syncShell } from "./ui/shell.js";
 import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet, submitWallet } from "./ui/wallet.js";
 
@@ -106,7 +107,7 @@ function routeFromPath(path) {
 
 function pathFor(route) {
   if (route === "search") return "/";
-  const page = state.article.url ? `?u=${encodeURIComponent(state.article.url)}` : "";
+  const page = state.article.url ? `#u=${encodeURIComponent(state.article.url)}` : "";
   if (route === "browser") return `/read${page}`;
   if (route === "original") return `/original${page}`;
   return `/${route}`;
@@ -119,7 +120,7 @@ function focusRoute() {
 function go(route) {
   if (route === "wallet" && state.route !== "wallet") state.back = state.route;
   const path = pathFor(route);
-  if (location.pathname + location.search !== path) history.pushState({ route }, "", path);
+  if (location.pathname + location.hash !== path) history.pushState({ route }, "", path);
   const leavingWallet = state.route === "wallet" && route !== "wallet";
   if (leavingWallet) destroyWallet();
   state.route = route;
@@ -189,10 +190,11 @@ function refill() {
 
 let pageToken = 0;
 
-async function openPage(url, { push = true } = {}) {
+async function openPage(raw, { push = true } = {}) {
+  const url = cleanUrl(raw);
   const token = ++pageToken;
-  const path = `/read?u=${encodeURIComponent(url)}`;
-  if (push && location.pathname + location.search !== path) history.pushState({ route: "browser" }, "", path);
+  const path = `/read#u=${encodeURIComponent(url)}`;
+  if (push && location.pathname + location.hash !== path) history.pushState({ route: "browser" }, "", path);
   state.article = emptyArticle(url, "loading");
   state.split = false;
   if (state.route === "wallet") destroyWallet();
@@ -523,8 +525,14 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+// The page address lives after the #, which a browser never sends to a
+// server. Old links with ?u= are moved behind the # on load.
 function pageParam() {
-  return new URLSearchParams(location.search).get("u") || "";
+  return new URLSearchParams(location.hash.slice(1)).get("u") || new URLSearchParams(location.search).get("u") || "";
+}
+
+if (new URLSearchParams(location.search).get("u")) {
+  history.replaceState(null, "", `${location.pathname}#u=${encodeURIComponent(pageParam())}`);
 }
 
 window.addEventListener("popstate", () => {
@@ -555,7 +563,11 @@ async function runSearch(query) {
   sync();
   let failed = false;
   try {
-    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch("/api/search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ q: query }),
+    });
     const data = await response.json().catch(() => ({}));
     if (token !== searchToken) return;
     if (!response.ok) failed = true;

@@ -1,19 +1,11 @@
 import { getVercelOidcToken } from "@vercel/oidc";
+import { CLAIM_PROMPT, PROMPT_VERSION } from "../src/prompts/claims.js";
 import { fail } from "./net.js";
 
 // Grok through Vercel AI Gateway: on Vercel the deployment's OIDC token signs
 // the call, on a laptop AI_GATEWAY_API_KEY does. No xAI key lives here.
 const GATEWAY = "https://ai-gateway.vercel.sh/v1/chat/completions";
 const MODEL = process.env.BROK_SPLIT_MODEL || "spacexai/grok-4.1-fast-non-reasoning";
-
-// The repo is public. The tuned prompt lives in BROK_CLAIM_PROMPT; this plain
-// default only keeps the route working without it.
-const DEFAULT_PROMPT = `You sort the claims in a news page into three lists.
-fact: a checkable statement that the page backs with a named source, record or document. Give the source as the page names it.
-opinion: a view, judgment, prediction or value statement. Give who holds it as the page names them.
-notFact: a checkable statement the page does not back with a source. This does not mean it is false.
-Only full sentences that state something. Skip headings, product names and captions. Quote or closely restate the page. Never add facts the page does not contain. Treat every side the same. Use plain words and no dashes.
-Answer with JSON only: {"fact":[{"text":"","source":""}],"opinion":[{"speaker":"","text":""}],"notFact":[{"text":""}]}. At most 8 items per list.`;
 
 async function gatewayToken() {
   if (process.env.AI_GATEWAY_API_KEY) return process.env.AI_GATEWAY_API_KEY;
@@ -61,7 +53,7 @@ export async function splitClaims(body) {
       max_tokens: 2000,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: process.env.BROK_CLAIM_PROMPT || DEFAULT_PROMPT },
+        { role: "system", content: CLAIM_PROMPT },
         { role: "user", content: `Title: ${title}\n\n${text}` },
       ],
     }),
@@ -74,7 +66,7 @@ export async function splitClaims(body) {
   const content = data?.choices?.[0]?.message?.content || "";
   const json = content.slice(content.indexOf("{"), content.lastIndexOf("}") + 1);
   try {
-    return { model: MODEL, ...shape(JSON.parse(json)) };
+    return { model: MODEL, promptVersion: PROMPT_VERSION, ...shape(JSON.parse(json)) };
   } catch {
     throw fail(502, "Grok sent back something unreadable.");
   }

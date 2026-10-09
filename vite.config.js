@@ -1,23 +1,6 @@
+import { execSync } from "node:child_process";
 import { defineConfig } from "vite";
-import { readRoute, splitRoute } from "./server/routes.js";
-import { searchWeb } from "./src/sidecar/web-search.js";
-
-function searchRoute(req, res) {
-  const url = new URL(req.url || "/", "http://127.0.0.1");
-  searchWeb(url.searchParams.get("q") || "")
-    .then((data) => {
-      res.statusCode = 200;
-      res.setHeader("content-type", "application/json; charset=utf-8");
-      res.setHeader("cache-control", "no-store");
-      res.end(JSON.stringify(data));
-    })
-    .catch((error) => {
-      res.statusCode = error.status || 502;
-      res.setHeader("content-type", "application/json; charset=utf-8");
-      res.setHeader("cache-control", "no-store");
-      res.end(JSON.stringify({ error: "Search failed." }));
-    });
-}
+import { readRoute, searchRoute, splitRoute } from "./server/routes.js";
 
 const ROUTES = { "/api/search": searchRoute, "/api/read": readRoute, "/api/split": splitRoute };
 
@@ -34,7 +17,21 @@ function api() {
   };
 }
 
+// The commit this build came from, shown in Settings so anyone can match the
+// live site to its source. Vercel sets the env var; a local build asks git.
+function commit() {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA;
+  try {
+    const sha = execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    const dirty = execSync("git status --porcelain", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    return dirty ? `${sha}+changes` : sha;
+  } catch {
+    return "";
+  }
+}
+
 export default defineConfig({
+  define: { __BROK_COMMIT__: JSON.stringify(commit()) },
   plugins: [api()],
   server: {
     host: "127.0.0.1",

@@ -5,6 +5,7 @@ import { esc, externalLink } from "./dom.js";
 import { grokMark, xMark } from "./official-marks.js";
 import { closeIcon, LOGO_INNER } from "./icons.js";
 import { ACCENTS } from "../sidecar/accent.js";
+import { PROMPT_URL, PROMPT_VERSION } from "../prompts/claims.js";
 
 function head(title, meta = "") {
   const sub = meta ? `<p class="pop-meta">${esc(meta)}</p>` : "";
@@ -128,6 +129,26 @@ export function commandHtml(state) {
     </div>`;
 }
 
+const REPO = "https://github.com/11insight/brok";
+
+// Which code this page runs, so anyone can check it against the source.
+function sourceHtml() {
+  const full = typeof __BROK_COMMIT__ === "string" ? __BROK_COMMIT__ : "";
+  const sha = full.replace("+changes", "");
+  const build = sha
+    ? externalLink(`${REPO}/tree/${sha}`, `${sha.slice(0, 7)}${full.endsWith("+changes") ? " plus local changes" : ""}`)
+    : "Not known";
+  return `<section class="source">
+      <h3>Open source</h3>
+      <dl class="source-facts">
+        <div><dt>This build</dt><dd>${build}</dd></div>
+        <div><dt>Code</dt><dd>${externalLink(REPO, "github.com/11insight/brok")}</dd></div>
+        <div><dt>License</dt><dd>${externalLink(`${REPO}/blob/main/LICENSE`, "AGPL 3.0")}</dd></div>
+        <div><dt>Grok prompt</dt><dd>${externalLink(PROMPT_URL, `Version ${PROMPT_VERSION}`)}</dd></div>
+      </dl>
+    </section>`;
+}
+
 function settingsCommands(state) {
   return filteredCommands("", state.article?.status === "done")
     .filter((command) => command.id !== "settings")
@@ -165,7 +186,8 @@ export function settingsHtml(state) {
         <li>Tap Original. See what the page tried to load.</li>
         <li>Tap Wallet for a test wallet. It is not real money.</li>
       </ol>
-    </details>`;
+    </details>
+    ${sourceHtml()}`;
 }
 
 export function blockedCount(rows) {

@@ -1122,3 +1122,10 @@ figcaption { margin-top: var(--s-2); color: var(--ink-dim); font-size: var(--t-s
 .howto dd { margin: 0; color: var(--ink-dim); font-size: var(--t-small); }
 .howto .fine { margin-top: var(--s-2); }
 .howto ol { margin-top: var(--s-2); margin-bottom: var(--s-4); padding-left: var(--s-4); color: var(--ink-dim); font-size: var(--t-small); display: grid; gap: 6px; }
+
+.source { margin-top: var(--s-4); }
+.source h3 { color: var(--ink-strong); font-size: var(--t-small); font-weight: 600; margin-bottom: var(--s-1); }
+.source-facts div { display: flex; justify-content: space-between; gap: var(--s-3); padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: var(--t-small); }
+.source-facts dt { color: var(--ink-dim); }
+.source-facts dd { margin: 0; text-align: right; }
+.source-facts a { color: var(--ink-strong); }

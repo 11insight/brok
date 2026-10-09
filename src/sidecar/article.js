@@ -35,7 +35,11 @@ function dateLabel(iso) {
 export async function loadArticle(url) {
   let response;
   try {
-    response = await fetch(`/api/read?u=${encodeURIComponent(url)}`);
+    response = await fetch("/api/read", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ u: url }),
+    });
   } catch {
     return emptyArticle(url, "error", "BROK could not reach that page.");
   }

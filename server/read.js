@@ -1,5 +1,6 @@
 import { Readability } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
+import { cleanUrl } from "../src/sidecar/clean-url.js";
 import { fetchPage } from "./net.js";
 
 // Known trackers by domain suffix. A third party not on this list is still
@@ -137,7 +138,7 @@ function blocksFrom(html) {
 }
 
 export async function readPage(raw) {
-  const { url, html } = await fetchPage(raw);
+  const { url, html } = await fetchPage(cleanUrl(raw));
   const pageUrl = new URL(url);
   const { document } = parseHTML(html);
   const blocked = thirdParties(document, pageUrl);
