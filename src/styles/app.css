@@ -1166,13 +1166,14 @@ button.official { cursor: pointer; }
 .post-link:hover { color: var(--white); }
 .rail-body > .fine { margin-top: var(--s-2); }
 
-/* Brok, the character. */
+/* Brok, the character. character.js draws every frame. */
 .brok-char { overflow: visible; }
-.brok-char .eye-lid rect { fill: var(--ink-ground); }
-.brok-char .eye-lid { transform-box: fill-box; transform-origin: center; transition: transform 0.25s ease; }
-.brok-char .char-eyes { transition: transform 0.45s cubic-bezier(.2,.9,.25,1); }
+.brok-char .eye-open { fill: var(--ink-ground); transform-box: fill-box; transform-origin: center; transition: transform 0.06s linear; }
+.brok-char .eye-happy { stroke: var(--ink-ground); }
+.brok-char .eye-slot.is-shut .eye-open { transform: scaleY(0.1); }
+.brok-char .char-shadow { fill: #000; opacity: 0.35; }
+.brok-char .char-think rect { fill: rgba(var(--white-rgb), 0.85); }
+.brok-char .spark { fill: currentColor; }
+.brok-char .spark-light { fill: #fff; }
 .hero .brok-char { cursor: pointer; }
 .hero { pointer-events: auto; }
-@media (prefers-reduced-motion: reduce) {
-  .brok-char .eye-lid, .brok-char .char-eyes { transition: none; }
-}

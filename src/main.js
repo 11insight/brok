@@ -805,7 +805,7 @@ async function runSearch(query) {
   let failed = false;
   let engine = "the search engine";
   window.clearTimeout(typingTimer);
-  brok?.squint(true);
+  brok?.think(true);
   try {
     const response = await fetch("/api/search", {
       method: "POST",
@@ -816,7 +816,7 @@ async function runSearch(query) {
     if (token !== searchToken) return;
     if (!response.ok) failed = true;
     if (data.source) engine = data.source;
-    brok?.squint(false);
+    brok?.think(false);
     if (response.ok && (data.results || []).length) celebrate();
     else wiggle();
     state.search = {
@@ -828,7 +828,7 @@ async function runSearch(query) {
   } catch {
     if (token !== searchToken) return;
     failed = true;
-    brok?.squint(false);
+    brok?.think(false);
     state.search = { query, status: "error", results: [], error: "Search failed." };
   }
   ledger.add({
