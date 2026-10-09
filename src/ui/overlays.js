@@ -147,7 +147,25 @@ export function settingsHtml(state) {
   return `${head("Settings")}
     <p class="eyebrow">Color</p>
     <div class="swatches">${swatches}</div>
-    <ul class="inset settings-list">${settingsCommands(state)}</ul>`;
+    <ul class="inset settings-list">${settingsCommands(state)}</ul>
+    <details class="howto">
+      <summary>How to use Brok</summary>
+      <h3>Why sign in</h3>
+      <dl>
+        <div><dt>Grok</dt><dd>Brok can use your Grok to sort pages into fact and opinion.</dd></div>
+        <div><dt>X</dt><dd>Brok can show posts that talk about the page you are reading.</dd></div>
+        <div><dt>Starlink</dt><dd>Brok can tell you if your area has an outage.</dd></div>
+      </dl>
+      <p class="fine">These are not linked to Brok yet. Each button opens its own site for now.</p>
+      <h3>How to</h3>
+      <ol>
+        <li>Type what you want to know. Tap the arrow.</li>
+        <li>Tap a result. You read it with no ads.</li>
+        <li>Tap Split. Grok sorts the page into fact, opinion and not fact.</li>
+        <li>Tap Original. See what the page tried to load.</li>
+        <li>Tap Wallet for a test wallet. It is not real money.</li>
+      </ol>
+    </details>`;
 }
 
 export function blockedCount(rows) {

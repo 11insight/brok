@@ -1108,3 +1108,17 @@ figcaption { margin-top: var(--s-2); color: var(--ink-dim); font-size: var(--t-s
 .settings-row { display: flex; align-items: center; width: 100%; min-height: var(--ctl); padding: 0 var(--s-4); color: var(--ink); font-size: 15px; text-align: left; transition: background var(--t-quick); }
 .settings-row:hover { background: var(--hover); color: var(--white); }
 .settings-row::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-top: 1.5px solid var(--ink-faint); border-right: 1.5px solid var(--ink-faint); transform: rotate(45deg); }
+
+.howto { margin-top: var(--s-3); border-radius: var(--r-row); background: var(--glass-3); border: 1px solid var(--glass-3-edge); }
+.howto summary { display: flex; align-items: center; min-height: var(--ctl); padding: 0 var(--s-4); color: var(--ink); font-size: 15px; cursor: pointer; list-style: none; }
+.howto summary::-webkit-details-marker { display: none; }
+.howto summary::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-right: 1.5px solid var(--ink-faint); border-bottom: 1.5px solid var(--ink-faint); transform: rotate(45deg); transition: transform var(--t-quick); }
+.howto[open] summary::after { transform: rotate(-135deg); }
+.howto > :not(summary) { margin-left: var(--s-4); margin-right: var(--s-4); }
+.howto h3 { margin-top: var(--s-2); color: var(--ink-strong); font-size: var(--t-small); font-weight: 600; }
+.howto dl { margin: var(--s-2) var(--s-4) 0; }
+.howto dl div { padding: 6px 0; }
+.howto dt { color: var(--ink-strong); font-size: var(--t-small); font-weight: 500; }
+.howto dd { margin: 0; color: var(--ink-dim); font-size: var(--t-small); }
+.howto .fine { margin-top: var(--s-2); }
+.howto ol { margin-top: var(--s-2); margin-bottom: var(--s-4); padding-left: var(--s-4); color: var(--ink-dim); font-size: var(--t-small); display: grid; gap: 6px; }
