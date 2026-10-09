@@ -1,5 +1,5 @@
 import { externalLink, esc } from "./dom.js";
-import { backIcon } from "./icons.js";
+import { arrowIcon, backIcon, brandMarkHtml } from "./icons.js";
 import { buzz, toast } from "./toast.js";
 import {
   RPC_HOST,
@@ -8,6 +8,7 @@ import {
   createWallet,
   dropAccount,
   forgetPhrase,
+  formatEth,
   formatSepolia,
   getAddress,
   getPhraseWords,
@@ -32,6 +33,10 @@ let txHash = "";
 let busy = false;
 let balanceToken = 0;
 let wordsShown = false;
+let balanceEth = "";
+let sendOpen = false;
+// Sends made in this tab. Gone on reload, like the wallet itself.
+const activity = [];
 let shake = false;
 
 const short = (address) => (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "");
@@ -72,7 +77,7 @@ function paint() {
   if (!host) return;
   rememberDrafts();
   blankSecrets();
-  host.innerHTML = `<div class="wallet">
+  host.innerHTML = `<div class="wallet xm">
     <div class="wallet-top">
       <button type="button" class="icon-btn glassy" data-action="go" data-route="back" aria-label="Back">${backIcon}</button>
       <h1 class="wallet-title">Wallet</h1>
@@ -97,8 +102,19 @@ function body() {
   return lockedHtml();
 }
 
+// The wallet card. Brok's own card: the logo, the short address, the network.
+function cardHtml(address) {
+  return `<button type="button" class="brok-card" ${address ? 'data-action="wallet-copy" aria-label="Copy address"' : "disabled"}>
+      <span class="card-top">${brandMarkHtml()}<span class="card-name">Brok</span><span class="card-net">Sepolia</span></span>
+      <span class="card-chip" aria-hidden="true"></span>
+      <span class="card-bottom"><span class="card-addr">${address ? esc(short(address)) : "New wallet"}</span><span class="card-hint">${address ? "Tap to copy" : "Test money"}</span></span>
+    </button>`;
+}
+
 function lockedHtml() {
-  return `<section class="phrase">
+  return `<h2 class="two-tone">Your wallet<span>Made on this device</span></h2>
+  ${cardHtml("")}
+  <section class="phrase">
     <h2>New wallet</h2>
     <p>You get 12 words, made on this device. You see them once.</p>
     <button type="button" class="btn primary block" data-action="wallet-create">Create wallet</button>
@@ -130,44 +146,82 @@ function revealHtml() {
   </section>`;
 }
 
+function amountHtml(eth) {
+  const [whole, part = ""] = String(eth || "0").split(".");
+  const cents = (part + "00").slice(0, Math.max(2, Math.min(4, part.replace(/0+$/, "").length)));
+  return `${esc(Number(whole).toLocaleString("en-US"))}<sup>.${esc(cents)}</sup>`;
+}
+
+function timeAgo(at) {
+  const mins = Math.max(1, Math.round((Date.now() - at) / 60000));
+  return mins < 60 ? `${mins} min ago` : `${Math.round(mins / 60)} hr ago`;
+}
+
+function activityHtml(address) {
+  const rows = activity
+    .map(
+      (row) => `<li class="act-row">
+        <span class="act-icon" aria-hidden="true">${arrowIcon}</span>
+        <span class="act-main"><span class="act-title">Sent to ${esc(short(row.to))}</span><span class="act-sub">${esc(timeAgo(row.at))}, ${externalLink(`https://sepolia.etherscan.io/tx/${row.hash}`, "view")}</span></span>
+        <span class="act-amount">−${esc(row.amount)}</span>
+      </li>`,
+    )
+    .join("");
+  return `<section class="xm-activity">
+    <header><h2>Recent activity</h2>${externalLink(`https://sepolia.etherscan.io/address/${address}`, "All on Etherscan")}</header>
+    ${rows ? `<ul>${rows}</ul>` : `<p class="act-empty">Nothing yet. Sends you make here show up here.</p>`}
+  </section>`;
+}
+
 function readyHtml() {
   const address = getAddress();
-  const balance =
-    balanceState === "loading" ? "" : balanceState === "error" ? "Can’t load" : balanceLabel.replace(" Sepolia ETH", "");
-  const retry =
+  const amount =
+    balanceState === "loading"
+      ? `<p class="xm-amount is-loading" aria-label="Reading balance"></p>`
+      : balanceState === "error"
+        ? `<p class="xm-amount is-problem">Can\u2019t load</p>`
+        : `<p class="xm-amount" data-balance>${amountHtml(balanceEth)}<span class="xm-unit">ETH</span></p>`;
+  const sub =
     balanceState === "error"
       ? `<button type="button" class="link-btn" data-action="wallet-retry">Try again</button>`
-      : `<p class="unit">Sepolia ETH</p>`;
+      : `<p class="xm-sub">Sepolia test money, worth $0</p>`;
   const sent = txHash
     ? `<p class="sent">Sent. ${externalLink(`https://sepolia.etherscan.io/tx/${txHash}`, "View it")}</p>`
     : "";
-  return `<section class="phrase balance-card">
+  const send = sendOpen
+    ? `<section class="phrase xm-send">
+      <h2 class="two-tone small">Send<span>to any Sepolia address</span></h2>
+      <form id="send-form" autocomplete="off">
+        <label class="amount-field" for="send-amount">
+          <input id="send-amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0" value="${esc(draftAmount)}" />
+          <span>ETH</span>
+        </label>
+        <p class="avail">${balanceState === "done" ? `You have ${esc(balanceEth)} ETH` : ""}</p>
+        <div class="field">
+          <label for="send-to">To</label>
+          <input id="send-to" type="text" autocomplete="off" spellcheck="false" placeholder="0x..." value="${esc(draftTo)}" />
+        </div>
+        <div class="xm-actions">
+          <button type="button" class="btn" data-action="wallet-close-send">Cancel</button>
+          <button type="submit" class="btn primary" ${busy ? "disabled" : ""}>${busy ? "Checking" : "Review"}</button>
+        </div>
+      </form>
+      <p class="fine note">${esc(note)}</p>
+    </section>`
+    : `<p class="fine note">${esc(note)}</p>`;
+  return `<section class="phrase xm-balance">
     <p class="eyebrow">Balance</p>
-    <p class="balance${balanceState === "error" ? " is-problem" : ""}${balanceState === "loading" ? " is-loading" : ""}" data-balance>${esc(balance)}</p>
-    ${retry}
-    <p class="addr" title="${esc(address)}">${esc(short(address))}</p>
-    <div class="wallet-actions">
-      <button type="button" class="btn primary" data-action="wallet-copy">Copy address</button>
-      ${externalLink(`https://sepolia.etherscan.io/address/${address}`, "Etherscan", "btn")}
-      ${externalLink(FAUCET, "Get test ETH", "btn")}
+    ${amount}
+    ${sub}
+    <div class="xm-actions">
+      <button type="button" class="btn primary" data-action="wallet-open-send">Send</button>
+      ${externalLink(FAUCET, "Add test ETH", "btn")}
     </div>
-  </section>
-  <section class="phrase">
-    <h2>Send</h2>
-    <form id="send-form" autocomplete="off">
-      <div class="field">
-        <label for="send-to">To</label>
-        <input id="send-to" type="text" autocomplete="off" spellcheck="false" value="${esc(draftTo)}" />
-      </div>
-      <div class="field">
-        <label for="send-amount">Amount in ETH${balanceState === "done" ? `<span class="avail">You have ${esc(balanceLabel.replace(" Sepolia ETH", ""))}</span>` : ""}</label>
-        <input id="send-amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(draftAmount)}" />
-      </div>
-      <button type="submit" class="btn primary block" ${busy ? "disabled" : ""}>${busy ? "Checking" : "Review"}</button>
-    </form>
-    <p class="fine note">${esc(note)}</p>
     ${sent}
   </section>
+  ${cardHtml(address)}
+  ${send}
+  ${activityHtml(address)}
   <button type="button" class="btn ghost block" data-action="wallet-lock">Use a different phrase</button>`;
 }
 
@@ -212,6 +266,7 @@ async function refreshBalance() {
     const value = await readBalance();
     if (token !== balanceToken || !host || mode !== "ready") return;
     balanceLabel = formatSepolia(value);
+    balanceEth = formatEth(value);
     balanceState = "done";
     paint();
     logBalance();
@@ -272,6 +327,13 @@ export function handle(action) {
     }, failed);
     return;
   }
+  if (action === "wallet-open-send" || action === "wallet-close-send") {
+    sendOpen = action === "wallet-open-send";
+    note = "";
+    paint();
+    if (sendOpen) host?.querySelector("#send-amount")?.focus();
+    return;
+  }
   if (action === "wallet-show-words") {
     wordsShown = true;
     buzz(8);
@@ -301,8 +363,13 @@ async function signAndSend() {
   busy = true;
   paint();
   try {
+    const sentAmount = pause?.amount || "";
+    const sentTo = pause?.to || "";
     const hash = await broadcastSend();
     txHash = hash;
+    activity.unshift({ to: sentTo, amount: sentAmount, hash, at: Date.now() });
+    sendOpen = false;
+    toast("Sent.");
     pause = null;
     mode = "ready";
     draftAmount = "";

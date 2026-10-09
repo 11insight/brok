@@ -1275,3 +1275,87 @@ button.official { cursor: pointer; }
 .ask-unfold { display: flex; width: 100%; align-items: center; justify-content: space-between; padding: 10px var(--s-4); color: var(--ink); font-size: var(--t-small); }
 .ask-unfold span { color: var(--indigo-lt); font-weight: 600; }
 .ask-unfold:hover { color: var(--white); }
+
+/* Wallet, in the spirit of X Money: black, big numbers, two-tone headings,
+   one white action. Still Apple glass, and still no fully round shapes. */
+.wallet.xm { max-width: 520px; display: grid; gap: var(--s-4); }
+.wallet.xm .wallet-top { margin-bottom: 0; }
+.two-tone { margin: var(--s-4) 0 0; color: var(--ink-strong); font-family: var(--font-display); font-size: 34px; font-weight: 500; line-height: 1.12; letter-spacing: -0.02em; }
+.two-tone span { display: block; color: var(--ink-faint); }
+.two-tone.small { margin: 0 0 var(--s-4); font-size: 24px; }
+.xm-balance { text-align: left; padding: var(--s-6) var(--s-6) var(--s-5, 20px); }
+.xm-balance .eyebrow { margin: 0; }
+.wallet.xm .xm-amount { display: flex; align-items: flex-start; margin: var(--s-2) 0 0; color: var(--ink-strong); font-family: var(--font-display); font-size: 64px; font-weight: 500; line-height: 1; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+.wallet.xm .xm-amount sup { margin: 6px 0 0 2px; font-size: 26px; letter-spacing: -0.01em; color: var(--ink); }
+.wallet.xm .xm-unit { align-self: flex-end; margin: 0 0 8px 10px; color: var(--ink-faint); font-size: 18px; font-weight: 500; letter-spacing: 0; }
+.wallet.xm .xm-amount.is-problem { font-size: 32px; color: var(--ink-dim); }
+.wallet.xm .xm-amount.is-loading { width: 180px; height: 64px; border-radius: 14px; background: rgba(var(--white-rgb), 0.07); animation: shimmer 1.4s ease-in-out infinite; }
+.xm-sub { margin: var(--s-2) 0 0 !important; color: var(--green) !important; font-size: var(--t-small); }
+.xm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin-top: var(--s-5, 20px); }
+.xm-actions .btn { height: 48px; font-size: 15px; font-weight: 600; border-radius: 14px; }
+.xm-actions .btn:not(.primary) { background: rgba(var(--white-rgb), 0.1); }
+
+/* The Brok card. */
+.brok-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  aspect-ratio: 1.586;
+  padding: var(--s-5, 20px);
+  border-radius: 20px;
+  overflow: hidden;
+  text-align: left;
+  color: var(--ink-strong);
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(var(--indigo-rgb), 0.35), transparent 60%),
+    linear-gradient(135deg, rgba(var(--white-rgb), 0.16), rgba(var(--white-rgb), 0.04) 55%, rgba(var(--white-rgb), 0.1));
+  -webkit-backdrop-filter: var(--glass-1-blur);
+  backdrop-filter: var(--glass-1-blur);
+  border: 1px solid rgba(var(--white-rgb), 0.18);
+  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.25), var(--shadow-float);
+  transition: transform 0.3s cubic-bezier(.2,.9,.25,1);
+}
+.brok-card::after { content: ""; position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 40%, rgba(var(--white-rgb), 0.18) 50%, transparent 60%); transform: translateX(-60%); transition: transform 0.9s ease; pointer-events: none; }
+.brok-card:not(:disabled):hover::after { transform: translateX(60%); }
+.brok-card:not(:disabled):hover { transform: translateY(-2px) rotate(-0.5deg); }
+.brok-card:not(:disabled):active { transform: scale(0.98); }
+.card-top { display: flex; align-items: center; gap: var(--s-2); }
+.card-top .brand-mark { width: 30px; height: 30px; }
+.card-name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.card-net { margin-left: auto; padding: 3px 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.3); color: var(--ink-dim); font-size: var(--t-micro); font-weight: 500; }
+.card-chip { width: 44px; height: 32px; border-radius: 7px; background: linear-gradient(135deg, rgba(var(--white-rgb), 0.55), rgba(var(--white-rgb), 0.18)); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.card-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
+.card-addr { font-family: var(--font-mono); font-size: 17px; letter-spacing: 0.04em; }
+.card-hint { color: var(--ink-faint); font-size: var(--t-micro); }
+
+/* Send. */
+.xm-send { padding: var(--s-6); }
+.amount-field { display: flex; align-items: baseline; justify-content: center; gap: var(--s-2); }
+.amount-field input { width: 100%; max-width: 280px; background: transparent; border: 0; color: var(--ink-strong); font-family: var(--font-display); font-size: 56px; font-weight: 500; letter-spacing: -0.03em; text-align: right; font-variant-numeric: tabular-nums; }
+.amount-field input:focus { outline: none; }
+.amount-field input::placeholder { color: var(--ink-faint); }
+.amount-field span { color: var(--ink-faint); font-size: 22px; font-weight: 500; }
+.xm-send .avail { float: none; display: block; margin: 4px 0 var(--s-2); text-align: center; color: var(--ink-faint); font-size: var(--t-small); }
+
+/* Recent activity. */
+.xm-activity { padding: var(--s-4) var(--s-5, 20px); border-radius: var(--r-container); background: var(--glass-2); border: 1px solid var(--glass-2-edge); }
+.xm-activity header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--s-2); }
+.xm-activity h2 { color: var(--ink-strong); font-size: 17px; font-weight: 600; }
+.xm-activity header a { color: var(--ink-dim); font-size: var(--t-small); }
+.xm-activity ul { list-style: none; margin: 0; padding: 0; }
+.act-row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: var(--s-3); padding: 10px 0; }
+.act-row + .act-row { border-top: 1px solid var(--line-soft); }
+.act-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 11px; background: rgba(var(--white-rgb), 0.08); color: var(--ink); }
+.act-icon .ico { width: 18px; height: 18px; transform: rotate(45deg); }
+.act-main { display: grid; gap: 2px; min-width: 0; }
+.act-title { color: var(--ink-strong); font-size: 15px; font-weight: 500; }
+.act-sub { color: var(--ink-faint); font-size: var(--t-micro); }
+.act-sub a { color: var(--ink-dim); }
+.act-amount { color: var(--ink-strong); font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.act-empty { color: var(--ink-faint); font-size: var(--t-small); padding: var(--s-2) 0; }
+@media (max-width: 600px) {
+  .wallet.xm .xm-amount { font-size: 52px; }
+  .two-tone { font-size: 28px; }
+}

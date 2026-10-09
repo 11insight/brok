@@ -90,6 +90,10 @@ export async function readBalance() {
   return publicClient.getBalance({ address: account.address });
 }
 
+export function formatEth(value) {
+  return formatEther(value);
+}
+
 export function formatSepolia(value) {
   return `${formatEther(value)} Sepolia ETH`;
 }
