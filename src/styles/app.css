@@ -429,18 +429,13 @@ a:hover { color: var(--white); }
   height: calc(100% - 12px);
   aspect-ratio: 1;
   flex: none;
-  /* Same glass as the box, nested 6px in. A square corner cap keeps it from reading as a circle. */
   border-radius: 12px;
-  background: rgba(var(--white-rgb), 0.1);
-  -webkit-backdrop-filter: var(--glass-1-blur);
-  backdrop-filter: var(--glass-1-blur);
-  border: 1px solid var(--glass-1-edge);
-  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.22), inset 0 -1px 1px rgba(var(--white-rgb), 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.5);
-  color: var(--ink-strong);
-  transition: background var(--t-quick), transform 0.15s;
+  color: var(--ink-dim);
+  transition: color var(--t-quick), transform 0.15s;
 }
-.field-search .go:hover { background: rgba(var(--white-rgb), 0.16); color: var(--white); }
-.field-search .go:active { transform: scale(0.96); }
+.field-search .go:hover { color: var(--white); }
+.field-search .go:active { transform: scale(0.92); }
+.field-search .go .ico { width: 22px; height: 22px; }
 .search .fine { width: min(720px, 100%); margin-top: var(--s-3); text-align: center; }
 .search.has-results .fine { display: none; }
 
