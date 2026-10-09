@@ -18,6 +18,7 @@ export const commands = [
   },
   { id: "original", title: "What this page tried to load", page: true },
   { id: "ledger", title: "Blocked list", page: false },
+  { id: "sent", title: "What left this device", page: false },
   { id: "security", title: "Security", page: false },
   { id: "settings", title: "Settings", page: false },
   { id: "wallet", title: "Wallet", page: false },

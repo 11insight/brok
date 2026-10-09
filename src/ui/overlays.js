@@ -22,10 +22,40 @@ function klassLabel(klass) {
   return "Call";
 }
 
-export function drawerHtml(rows) {
+function timeOf(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function sentHtml(rows) {
+  if (!rows.length) return `<p class="empty">Nothing has left this device yet.</p>`;
+  const items = rows
+    .map(
+      (row) => `<li class="inset-row sent-row">
+        <span class="kind">${esc(row.kind)}<time>${esc(timeOf(row.at))}</time></span>
+        <span class="host">${esc(row.host)}</span>
+        <span class="what">${esc(row.detail)}</span>
+      </li>`,
+    )
+    .join("");
+  return `<ul class="inset">${items}</ul>`;
+}
+
+// Two lists in one panel: what Brok stopped, and everything that left.
+export function drawerHtml(rows, tab = "blocked") {
   const blocked = rows.filter((row) => row.result === "would-have");
-  return `${head("Blocked", blocked.length ? `${blocked.length} stopped before they loaded` : "")}
-    <div class="drawer-list">${blockedListHtml(blocked, "Nothing blocked yet. Open a page to see what it tries to load.")}</div>`;
+  const sent = rows.filter((row) => row.result === "allowed");
+  const tabs = `<div class="seg drawer-seg" role="tablist" aria-label="List">
+      <button type="button" role="tab" data-action="ledger-tab" data-tab="blocked" aria-selected="${tab === "blocked"}">Blocked ${blocked.length}</button>
+      <button type="button" role="tab" data-action="ledger-tab" data-tab="sent" aria-selected="${tab === "sent"}">Sent ${sent.length}</button>
+    </div>`;
+  const body =
+    tab === "sent"
+      ? `<p class="fine">Every request that left this device, newest first. Kept in this tab only.</p>${sentHtml(sent)}`
+      : blockedListHtml(blocked, "Nothing blocked yet. Open a page to see what it tries to load.");
+  return `${head(tab === "sent" ? "Sent" : "Blocked")}
+    ${tabs}
+    <div class="drawer-list">${body}</div>`;
 }
 
 const officialButtons = {

@@ -166,7 +166,7 @@ export function syncShell(root, state, rows) {
   win.querySelector("[data-blocked]").textContent = String(blockedCount(rows));
   const drawer = win.querySelector("#drawer");
   drawer.hidden = !state.ledgerOpen;
-  if (state.ledgerOpen) drawer.innerHTML = drawerHtml(rows);
+  if (state.ledgerOpen) drawer.innerHTML = drawerHtml(rows, state.ledgerTab);
   const signin = win.querySelector("#signin");
   signin.hidden = !state.signinOpen;
   if (state.signinOpen) signin.innerHTML = signinHtml(state.accounts);

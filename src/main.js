@@ -27,6 +27,7 @@ const state = {
   accounts: { grok: false, x: false, starlink: false },
   onDevice: true,
   ledgerOpen: false,
+  ledgerTab: "blocked",
   signinOpen: false,
   securityOpen: false,
   settingsOpen: false,
@@ -213,12 +214,12 @@ async function openPage(raw, { push = true } = {}) {
   ledger.add({
     id: `read-${token}`,
     klass: "medium",
-    kind: "Page fetch",
-    host,
+    kind: "Page address",
+    host: `Brok's server, then ${host}`,
     result: "allowed",
     detail: article.status === "done"
-      ? "BROK's server fetched the page for you. No cookies or account were sent."
-      : `BROK's server asked for the page. ${article.error}`,
+      ? `Brok's server fetched the page. ${host} saw Brok, not you. No cookies, no account.`
+      : `Brok's server asked for the page. ${article.error}`,
   });
   // The ledger shows newest first, so add low risk first and high risk lands on top.
   for (const row of [...article.blocked].reverse()) {
@@ -246,9 +247,9 @@ async function runSplit() {
     id: `split-${Date.now()}`,
     klass: "medium",
     kind: "Page text",
-    host: "Grok (ai-gateway.vercel.sh)",
+    host: result.via || "Brok's server, then Vercel AI Gateway, then xAI",
     result: "allowed",
-    detail: `You sent ${words} words of page text. No account was sent.${result.status === "error" ? ` ${result.error}` : ""}`,
+    detail: `${words} words of page text, to sort it. No account.${result.status === "error" ? ` ${result.error}` : ""}`,
   });
   if (state.article !== article) return;
   buzz(30);
@@ -328,7 +329,10 @@ function runCommand() {
     go("wallet");
     return;
   }
-  if (id === "ledger") state.ledgerOpen = true;
+  if (id === "ledger" || id === "sent") {
+    state.ledgerOpen = true;
+    state.ledgerTab = id === "sent" ? "sent" : "blocked";
+  }
   if (id === "security") state.securityOpen = true;
   if (id === "settings") state.settingsOpen = true;
   sync();
@@ -336,17 +340,6 @@ function runCommand() {
 
 function toggleAccount(id) {
   state.accounts = { ...state.accounts, [id]: !state.accounts[id] };
-  if (id === "starlink" && state.accounts.starlink) {
-    ledger.add({
-      id: "starlink-signin",
-      klass: "medium",
-      kind: "Account lookup",
-      host: "account.starlink.test",
-      result: "allowed",
-      detail:
-        "Starlink sign-in reveals a dish cell, which is a location. Logged for that reason. Estimator, not a packet trace.",
-    });
-  }
   fillPosts(app, posts, state.article.published, state.accounts.x);
   sync();
 }
@@ -400,10 +393,16 @@ app.addEventListener("click", (event) => {
     setSplit(!state.split);
     return;
   }
+  if (action === "ledger-tab") {
+    state.ledgerTab = target.dataset.tab;
+    sync();
+    return;
+  }
   if (action === "open-ledger") {
     const next = !state.ledgerOpen;
     closeOverlays();
     state.ledgerOpen = next;
+    state.ledgerTab = target.dataset.tab || "blocked";
     sync();
     return;
   }
@@ -551,6 +550,22 @@ window.addEventListener("popstate", () => {
   focusRoute();
 });
 
+// A link that opens in a new tab goes straight from your browser to that site.
+document.addEventListener("click", (event) => {
+  const link = event.target.closest?.('a[target="_blank"]');
+  if (!link) return;
+  let host = "";
+  try { host = new URL(link.href).hostname; } catch { return; }
+  ledger.add({
+    id: `link-${Date.now()}`,
+    klass: "low",
+    kind: "Link opened",
+    host,
+    result: "allowed",
+    detail: `Your browser went to ${host} in a new tab. Brok was not in between.`,
+  });
+});
+
 ledger.on(() => {
   if (document.querySelector(".window")) sync();
 });
@@ -585,12 +600,10 @@ async function runSearch(query) {
   ledger.add({
     id: `search-${token}`,
     klass: "medium",
-    kind: "Web search",
-    host: "bing.com",
+    kind: "Search",
+    host: "Brok's server, then bing.com",
     result: "allowed",
-    detail: failed
-      ? `Query sent. Results did not come back. "${query.slice(0, 80)}"`
-      : `Query sent. No account was sent. "${query.slice(0, 80)}"`,
+    detail: `"${query.slice(0, 80)}". Bing saw Brok's server, not you.${failed ? " No results came back." : ""}`,
   });
 }
 

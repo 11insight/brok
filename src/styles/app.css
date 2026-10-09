@@ -1129,3 +1129,10 @@ figcaption { margin-top: var(--s-2); color: var(--ink-dim); font-size: var(--t-s
 .source-facts dt { color: var(--ink-dim); }
 .source-facts dd { margin: 0; text-align: right; }
 .source-facts a { color: var(--ink-strong); }
+
+.drawer-seg { display: flex; margin-top: var(--s-2); }
+.drawer-seg button { flex: 1; font-variant-numeric: tabular-nums; }
+.sent-row .kind { display: flex; justify-content: space-between; gap: var(--s-2); }
+.sent-row time { color: var(--ink-faint); font-size: var(--t-micro); font-weight: 400; font-variant-numeric: tabular-nums; }
+.sent-row .what { color: var(--ink-dim); font-size: var(--t-small); }
+.drawer-list > .fine { margin-bottom: var(--s-2); }

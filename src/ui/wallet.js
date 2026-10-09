@@ -31,7 +31,6 @@ let pause = null;
 let txHash = "";
 let busy = false;
 let balanceToken = 0;
-let balanceLogged = false;
 let wordsShown = false;
 let shake = false;
 
@@ -194,6 +193,17 @@ function logEgress(row) {
   onEgress?.(row);
 }
 
+function logBalance() {
+  logEgress({
+    id: `wallet-balance-${Date.now()}`,
+    klass: "low",
+    kind: "Balance check",
+    host: RPC_HOST,
+    result: "allowed",
+    detail: "Your wallet address, to read its balance. Never the phrase.",
+  });
+}
+
 async function refreshBalance() {
   const token = ++balanceToken;
   balanceState = "loading";
@@ -204,18 +214,9 @@ async function refreshBalance() {
     balanceLabel = formatSepolia(value);
     balanceState = "done";
     paint();
-    if (!balanceLogged) {
-      balanceLogged = true;
-      logEgress({
-        id: "wallet-balance",
-        klass: "low",
-        kind: "Balance",
-        host: RPC_HOST,
-        result: "allowed",
-        detail: "Sepolia balance read. No phrase was sent.",
-      });
-    }
+    logBalance();
   } catch {
+    logBalance();
     if (token !== balanceToken || !host || mode !== "ready") return;
     balanceState = "error";
     paint();
@@ -362,6 +363,16 @@ async function reviewFrom(form) {
   note = "";
   paint();
   const result = await inspectSend({ to: draftTo, amount: draftAmount });
+  if (result.ok || /Sepolia/.test(result.error || "")) {
+    logEgress({
+      id: `wallet-check-${Date.now()}`,
+      klass: "low",
+      kind: "Send check",
+      host: RPC_HOST,
+      result: "allowed",
+      detail: "Your address and the address you are sending to. Never the phrase.",
+    });
+  }
   busy = false;
   if (!host) return;
   if (!result.ok) {
