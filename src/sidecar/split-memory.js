@@ -1,17 +1,23 @@
-const PREFIX = "brok.pane.";
+const KEY = "brok.view";
 
-// View mode only. Accounts, page text, and secrets are not written here.
-export function readSplit(articleId) {
+// One remembered choice, reader or split. Not stored per page, so this
+// browser keeps no list of what you read.
+export function readSplit() {
   try {
-    return localStorage.getItem(PREFIX + articleId) === "split";
+    localStorage.removeItem("brok.pane.");
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("brok.pane.")) localStorage.removeItem(key);
+    }
+    return localStorage.getItem(KEY) === "split";
   } catch {
     return false;
   }
 }
 
-export function writeSplit(articleId, split) {
+export function writeSplit(_id, split) {
   try {
-    localStorage.setItem(PREFIX + articleId, split ? "split" : "single");
+    localStorage.setItem(KEY, split ? "split" : "reader");
   } catch {
     // Private mode. The toggle still works for this paint.
   }

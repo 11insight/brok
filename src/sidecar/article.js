@@ -68,7 +68,14 @@ export async function splitArticle(article) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return { status: "error", error: data.error || "The split failed." };
-    return { status: "done", model: data.model, fact: data.fact, opinion: data.opinion, notFact: data.notFact };
+    return {
+      status: "done",
+      model: data.model,
+      promptVersion: data.promptVersion,
+      fact: data.fact,
+      opinion: data.opinion,
+      notFact: data.notFact,
+    };
   } catch {
     return { status: "error", error: "Grok did not answer." };
   }

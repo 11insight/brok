@@ -217,6 +217,19 @@ export function settingsHtml(state) {
         <li>Tap Wallet for a test wallet. It is not real money.</li>
       </ol>
     </details>
+    <details class="howto">
+      <summary>Who sees what</summary>
+      <dl>
+        <div><dt>When you search</dt><dd>Brok's server asks Bing for you. Bing sees Brok, not you.</dd></div>
+        <div><dt>When you open a page</dt><dd>Brok's server gets the page. The site sees Brok, not you. Its trackers never load.</dd></div>
+        <div><dt>When you split</dt><dd>The page text goes to Vercel and xAI, the maker of Grok. Not your name or accounts.</dd></div>
+        <div><dt>The wallet</dt><dd>Your address goes to publicnode.com to read your balance and send. Your phrase never leaves this tab.</dd></div>
+        <div><dt>Vercel, our host</dt><dd>Sees your internet address when you load Brok. Not your searches or the pages you read.</dd></div>
+        <div><dt>Brok keeps</dt><dd>Nothing. No accounts, no list of what you search or read.</dd></div>
+        <div><dt>This browser keeps</dt><dd>Your color and your view choice. Nothing else.</dd></div>
+      </dl>
+      <p class="fine">Open the Sent list to see each one as it happens.</p>
+    </details>
     ${sourceHtml()}`;
 }
 

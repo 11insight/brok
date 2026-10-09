@@ -1136,3 +1136,6 @@ figcaption { margin-top: var(--s-2); color: var(--ink-dim); font-size: var(--t-s
 .sent-row time { color: var(--ink-faint); font-size: var(--t-micro); font-weight: 400; font-variant-numeric: tabular-nums; }
 .sent-row .what { color: var(--ink-dim); font-size: var(--t-small); }
 .drawer-list > .fine { margin-bottom: var(--s-2); }
+.howto > .fine:last-child { margin-bottom: var(--s-4); }
+.split-bar.is-done p { display: block; }
+.split-bar a { color: var(--ink); }

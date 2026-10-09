@@ -258,7 +258,7 @@ async function runSplit() {
     article.panes.fact.items = result.fact;
     article.panes.opinion.items = result.opinion;
     article.panes.notFact.items = result.notFact;
-    article.split = { status: "done", model: result.model };
+    article.split = { status: "done", model: result.model, promptVersion: result.promptVersion, via: result.label };
   } else {
     article.split = result;
   }

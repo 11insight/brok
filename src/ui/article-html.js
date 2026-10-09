@@ -1,7 +1,8 @@
 import { claimLabels, railBlocks } from "../fixtures/cites.js";
 import { againstPage, formatWhen } from "./format.js";
 import { blockedListHtml, blockedSummary } from "./blocked.js";
-import { esc } from "./dom.js";
+import { esc, externalLink } from "./dom.js";
+import { PROMPT_URL } from "../prompts/claims.js";
 
 function hasPage(article) {
   return Boolean(article?.title || article?.blocks?.length);
@@ -92,6 +93,17 @@ export function postsRegion(posts, pageIso, xOn) {
   return blocksHtml(posts, pageIso);
 }
 
+// "spacexai/grok-4.1-fast-non-reasoning" reads as "Grok 4.1 Fast".
+export function modelName(model) {
+  const name = String(model || "Grok")
+    .replace(/^[^/]+\//, "")
+    .replace(/-non-reasoning$/, "")
+    .split("-")
+    .map((word) => (/^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
+  return name || "Grok";
+}
+
 function splitBar(article) {
   const split = article.split || {};
   if (split.status === "loading") {
@@ -101,7 +113,8 @@ function splitBar(article) {
     return `<div class="split-bar is-problem" id="inference"><p>${esc(split.error || "The split failed.")}</p><button type="button" class="btn sm" data-action="split-now">Try again</button></div>`;
   }
   if (split.status === "done") {
-    return `<div class="split-bar is-done" id="inference"><p>Sorted by Grok. A first pass, not a ruling.</p></div>`;
+    const prompt = split.promptVersion ? `, prompt version ${esc(split.promptVersion)}` : "";
+    return `<div class="split-bar is-done" id="inference"><p>Sorted by ${esc(modelName(split.model))}${prompt}${split.via ? `, ${esc(split.via)}` : ""}. A first pass, not a ruling. ${externalLink(PROMPT_URL, "See the prompt")}</p></div>`;
   }
   return `<div class="split-bar is-ask" id="inference">
     <p><strong>Sort this page with Grok.</strong> The page text goes to Grok. Your accounts do not.</p>
