@@ -288,6 +288,8 @@ function arm(command) {
     runCommand();
     return;
   }
+  closeOverlays();
+  state.commandOpen = true;
   state.commandStage = "egress";
   state.commandEgress = { title: command.title, ...egress };
   sync();

@@ -1098,3 +1098,8 @@ figcaption { margin-top: var(--s-2); color: var(--ink-dim); font-size: var(--t-s
 .brand-tag { margin-left: 2px; color: var(--ink-faint); font-family: var(--font); font-size: var(--t-small); font-weight: 400; letter-spacing: 0; white-space: nowrap; }
 .window:not([data-route="search"]) .brand-tag { display: none; }
 @media (max-width: 600px) { .brand-tag { display: none; } }
+
+.settings-list li + li { border-top: 1px solid var(--line-soft); }
+.settings-row { display: flex; align-items: center; width: 100%; min-height: var(--ctl); padding: 0 var(--s-4); color: var(--ink); font-size: 15px; text-align: left; transition: background var(--t-quick); }
+.settings-row:hover { background: var(--hover); color: var(--white); }
+.settings-row::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-top: 1.5px solid var(--ink-faint); border-right: 1.5px solid var(--ink-faint); transform: rotate(45deg); }

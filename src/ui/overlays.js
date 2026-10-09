@@ -63,7 +63,7 @@ export function signinHtml(accounts) {
     })
     .join("");
   return `${head("Sign in")}
-    <div class="accounts">${rows}</div>
+    <div class="accounts">${rows}</div>`;
 }
 
 export function securityHtml(state) {
@@ -128,6 +128,15 @@ export function commandHtml(state) {
     </div>`;
 }
 
+function settingsCommands(state) {
+  return filteredCommands("", state.article?.status === "done")
+    .filter((command) => command.id !== "settings")
+    .map(
+      (command) => `<li><button type="button" class="settings-row" data-action="command-arm" data-command="${esc(command.id)}">${esc(command.title)}</button></li>`,
+    )
+    .join("");
+}
+
 export function settingsHtml(state) {
   const swatches = ACCENTS.map(
     (accent) => `<button type="button" class="swatch${state.accent === accent.id ? " is-on" : ""}" data-action="set-accent" data-accent="${esc(accent.id)}" aria-pressed="${state.accent === accent.id}" style="--swatch: ${esc(accent.color)}">
@@ -138,7 +147,7 @@ export function settingsHtml(state) {
   return `${head("Settings")}
     <p class="eyebrow">Color</p>
     <div class="swatches">${swatches}</div>
-    <button type="button" class="btn" data-action="open-command">Commands <kbd>⌘K</kbd></button>`;
+    <ul class="inset settings-list">${settingsCommands(state)}</ul>`;
 }
 
 export function blockedCount(rows) {
