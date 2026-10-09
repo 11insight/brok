@@ -1,9 +1,9 @@
 import { starlinkFixture } from "../fixtures/accounts.js";
 import { quotesFor } from "../fixtures/ticker.js";
-import { columnsHtml, fillPosts, originalHtml, railHtml, singleHtml } from "./article-html.js";
+import { columnsHtml, fillPosts, originalHtml, singleHtml } from "./article-html.js";
 import { esc } from "./dom.js";
 import { arrowIcon, brandMark, gearIcon, searchIcon } from "./icons.js";
-import { blockedCount, commandHtml, drawerHtml, securityHtml, settingsHtml, shelfHtml, signinHtml } from "./overlays.js";
+import { blockedCount, commandHtml, drawerHtml, securityHtml, settingsHtml, shelfHtml, signinHtml, xRailHtml } from "./overlays.js";
 
 function resultsHtml(search) {
   if (!search || search.status === "idle") return "";
@@ -110,7 +110,6 @@ export function fillShell(root, article, posts) {
   root.querySelector("#single").innerHTML = singleHtml(article);
   root.querySelector("#columns").innerHTML = columnsHtml(article);
   root.querySelector("#original").innerHTML = originalHtml(article);
-  root.querySelector("#rail").innerHTML = railHtml(posts, article.published);
 }
 
 export function syncShell(root, state, rows) {
@@ -162,14 +161,19 @@ export function syncShell(root, state, rows) {
   const meta = win.querySelector(".meta");
   if (meta) meta.hidden = !pageOn;
   const rail = win.querySelector("#rail");
-  rail.hidden = !state.accounts.x || state.split || closing || state.route === "original" || state.route === "search";
+  rail.hidden = !state.xSession || state.split || closing || state.route !== "browser" || state.article?.status !== "done";
+  const railSig = rail.hidden ? "" : JSON.stringify([state.xPosts, state.article?.url]);
+  if (railSig !== rail.dataset.sig) {
+    rail.dataset.sig = railSig;
+    if (!rail.hidden) rail.innerHTML = xRailHtml(state);
+  }
   win.querySelector("[data-blocked]").textContent = String(blockedCount(rows));
   const drawer = win.querySelector("#drawer");
   drawer.hidden = !state.ledgerOpen;
   if (state.ledgerOpen) drawer.innerHTML = drawerHtml(rows, state.ledgerTab);
   const signin = win.querySelector("#signin");
   signin.hidden = !state.signinOpen;
-  if (state.signinOpen) signin.innerHTML = signinHtml(state.accounts);
+  if (state.signinOpen) signin.innerHTML = signinHtml(state);
   const security = win.querySelector("#security");
   security.hidden = !state.securityOpen;
   if (state.securityOpen) security.innerHTML = securityHtml(state);

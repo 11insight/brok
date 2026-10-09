@@ -77,25 +77,69 @@ const officialButtons = {
   },
 };
 
-function accountControl(layer, on) {
-  const official = officialButtons[layer.id];
-  if (!official) {
-    return switchHtml("toggle-account", `${layer.name}`, on, `data-account="${esc(layer.id)}"`);
+function accountControl(layer, state) {
+  const x = state.xSession;
+  if (layer.id === "x" && state.config?.xClientId) {
+    if (x) {
+      return `<div class="signed-in"><span>${xMark}<span>Signed in as @${esc(x.username || "you")}</span></span>
+        <button type="button" class="btn sm" data-action="x-signout">Sign out</button></div>`;
+    }
+    return `<button type="button" class="official" data-action="x-signin">${xMark}<span>Sign in with X</span></button>`;
   }
+  const official = officialButtons[layer.id];
+  if (!official) return "";
   return `<a class="official" href="${esc(official.href)}" target="_blank" rel="noreferrer">${official.mark}<span>${official.label}</span></a>`;
 }
 
-export function signinHtml(accounts) {
+export function signinHtml(state) {
   const rows = accountLayers
-    .map((layer) => {
-      const on = Boolean(accounts[layer.id]);
-      return `<div class="account">
-        ${accountControl(layer, on)}
-      </div>`;
-    })
+    .map((layer) => `<div class="account">${accountControl(layer, state)}</div>`)
     .join("");
+  const note = state.config?.xClientId
+    ? "Signing in with X shows posts that link to the page you read. Your X sign-in stays in this tab."
+    : "";
   return `${head("Sign in")}
-    <div class="accounts">${rows}</div>`;
+    <div class="accounts">${rows}</div>
+    ${note ? `<p class="fine">${note}</p>` : ""}`;
+}
+
+function timeAgo(iso) {
+  const mins = Math.max(1, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours} hr ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}
+
+// Posts on X that link to this page. Only fetched when you ask.
+export function xRailHtml(state) {
+  const posts = state.xPosts || { status: "idle" };
+  let body;
+  if (posts.status === "loading") {
+    body = `<div class="claim-ghost"><i></i><i></i><i></i></div>`.repeat(3);
+  } else if (posts.status === "error") {
+    body = `<p class="empty">${esc(posts.error)}</p><button type="button" class="btn sm" data-action="x-posts">Try again</button>`;
+  } else if (posts.status === "done") {
+    body = posts.items.length
+      ? posts.items
+          .map(
+            (post) => `<article class="post">
+              <header class="post-top"><p class="post-name">${esc(post.name)} <span>@${esc(post.username)}</span></p><p class="post-time">${esc(timeAgo(post.time))}</p></header>
+              <p>${esc(post.text)}</p>
+              ${externalLink(`https://x.com/${post.username}/status/${post.id}`, "Open on X", "post-link")}
+            </article>`,
+          )
+          .join("")
+      : `<p class="empty">No posts link to this page this week.</p>`;
+  } else {
+    body = `<button type="button" class="btn primary block" data-action="x-posts">Show posts on X</button>
+      <p class="fine">X sees your X account and this page address. Brok's server passes it on and keeps nothing.</p>`;
+  }
+  return `<header class="rail-head">
+      <h2>Posts on X</h2>
+      <p>From the last 7 days, newest first. Likes do not change the order.</p>
+    </header>
+    <div class="rail-body">${body}</div>`;
 }
 
 export function securityHtml(state) {
@@ -255,13 +299,14 @@ export function settingsHtml(state) {
     <details class="howto">
       <summary>Who sees what</summary>
       <dl>
-        <div><dt>When you search</dt><dd>Brok's server asks Bing for you. Bing sees Brok, not you.</dd></div>
+        <div><dt>When you search</dt><dd>Brok's server asks ${esc(state.config?.search || "the search engine")} for you. It sees Brok, not you.</dd></div>
+        <div><dt>When you sign in with X</dt><dd>X sees your X account and the pages you look up posts for. Your sign-in stays in this tab. Brok's server passes it to X and keeps nothing.</dd></div>
         <div><dt>When you open a page</dt><dd>Brok's server gets the page. The site sees Brok, not you. Its trackers never load.</dd></div>
         <div><dt>When you split</dt><dd>The page text goes to Vercel and xAI, the maker of Grok. Not your name or accounts. Pick your own model above and it goes straight from your browser to that model instead.</dd></div>
         <div><dt>The wallet</dt><dd>Your address goes to publicnode.com to read your balance and send. Your phrase never leaves this tab.</dd></div>
         <div><dt>Vercel, our host</dt><dd>Sees your internet address when you load Brok. Not your searches or the pages you read.</dd></div>
         <div><dt>Brok keeps</dt><dd>Nothing. No accounts, no list of what you search or read.</dd></div>
-        <div><dt>This browser keeps</dt><dd>Your color and your view choice. Nothing else.</dd></div>
+        <div><dt>This browser keeps</dt><dd>Your color and your view choice. While this tab is open, your X sign-in and any model key you added.</dd></div>
       </dl>
       <p class="fine">Open the Sent list to see each one as it happens.</p>
     </details>

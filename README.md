@@ -37,14 +37,20 @@ text or your key. Your key stays in the tab unless you tick Remember.
 
 Running at home with Brok's own Grok instead needs an `AI_GATEWAY_API_KEY` from Vercel.
 
+## Set up search and X (for whoever runs Brok)
+
+- **Search:** set `BRAVE_API_KEY` (from https://api-dashboard.search.brave.com). Without it Brok falls back to Bing's public feed.
+- **Sign in with X:** make an app at https://developer.x.com with OAuth 2.0 on, callback `https://<your domain>/auth/x/callback`, then set `X_CLIENT_ID` (and `X_CLIENT_SECRET` if X marks the app confidential). Post search needs paid X API access. Extra domains go in `BROK_ORIGINS`, comma separated.
+
 ## Who sees what
 
 | When you | Who gets it | What they get |
 |---|---|---|
-| Search | Brok's server, then Bing | Your search words. Bing sees Brok, not you. |
+| Search | Brok's server, then Brave Search | Your search words. Brave sees Brok, not you. |
 | Open a page | Brok's server, then the site | The page address. The site sees Brok, not you. Its trackers never load. |
 | Split with Brok's Grok | Brok's server, Vercel AI Gateway, xAI | The page text. No name, no account. |
 | Split with your own model | Only that model | The page text, straight from your browser. |
+| Sign in with X, then Show posts | Brok's server, then X | Your X sign-in and the page address. Brok keeps neither. |
 | Use the wallet | publicnode.com | Your wallet address. Never the phrase. |
 | Load Brok | Vercel, our host | Your internet address. Not your searches or pages. |
 

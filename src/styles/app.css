@@ -1160,3 +1160,12 @@ figcaption { margin-top: var(--s-2); color: var(--ink-dim); font-size: var(--t-s
 .model-remember { display: flex !important; align-items: center; gap: var(--s-2); color: var(--ink) !important; font-size: var(--t-small) !important; font-weight: 400 !important; }
 .model-remember input { width: 18px; height: 18px; accent-color: var(--indigo); }
 .model-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+
+.signed-in { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: var(--ctl); padding: 0 var(--s-2) 0 var(--s-4); border-radius: var(--r-control); background: var(--glass-2); border: 1px solid var(--glass-1-edge); color: var(--ink-strong); font-size: 15px; }
+.signed-in > span { display: inline-flex; align-items: center; gap: var(--s-2); }
+.signed-in .x-mark { width: 18px; height: 18px; }
+button.official { cursor: pointer; }
+.rail-body .post p { color: var(--ink); font-size: 15px; line-height: 1.5; }
+.post-link { color: var(--ink-dim); font-size: var(--t-small); }
+.post-link:hover { color: var(--white); }
+.rail-body > .fine { margin-top: var(--s-2); }

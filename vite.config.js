@@ -1,8 +1,26 @@
 import { execSync } from "node:child_process";
 import { defineConfig } from "vite";
-import { readRoute, searchRoute, splitRoute } from "./server/routes.js";
+import {
+  configRoute,
+  readRoute,
+  searchRoute,
+  splitRoute,
+  xMeRoute,
+  xPostsRoute,
+  xRevokeRoute,
+  xTokenRoute,
+} from "./server/routes.js";
 
-const ROUTES = { "/api/search": searchRoute, "/api/read": readRoute, "/api/split": splitRoute };
+const ROUTES = {
+  "/api/search": searchRoute,
+  "/api/read": readRoute,
+  "/api/split": splitRoute,
+  "/api/config": configRoute,
+  "/api/x/token": xTokenRoute,
+  "/api/x/me": xMeRoute,
+  "/api/x/posts": xPostsRoute,
+  "/api/x/revoke": xRevokeRoute,
+};
 
 function serve(req, res, next) {
   const route = ROUTES[new URL(req.url || "/", "http://127.0.0.1").pathname];

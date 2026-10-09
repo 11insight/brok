@@ -55,12 +55,41 @@ function parseRss(xml) {
   return results;
 }
 
+// Brave Search API when BRAVE_API_KEY is set: an official, paid API with no
+// tracking. Without a key, Bing's public RSS feed, which can break any day.
+async function searchBrave(query, key) {
+  const url = new URL("https://api.search.brave.com/res/v1/web/search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("count", String(LIMIT));
+  url.searchParams.set("safesearch", "moderate");
+  const response = await fetch(url, {
+    headers: { accept: "application/json", "x-subscription-token": key },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (response.status === 429) throw fail(429, "Too many searches right now. Try again in a moment.");
+  if (!response.ok) throw fail(502, "Search failed.");
+  const data = await response.json().catch(() => ({}));
+  const results = [];
+  const seen = new Set();
+  for (const item of data?.web?.results || []) {
+    const href = cleanUrl(item.url || "");
+    const title = decode(item.title || "");
+    if (!href || !title || seen.has(href)) continue;
+    seen.add(href);
+    results.push({ title, url: href, snippet: decode(item.description || "") });
+    if (results.length >= LIMIT) break;
+  }
+  return { query, source: "search.brave.com", results };
+}
+
 export async function searchWeb(raw) {
   const query = String(raw || "")
     .replace(/[\u0000-\u001f]/g, " ")
     .trim()
     .slice(0, 240);
   if (!query) throw fail(400, "Type a search.");
+  const key = process.env.BRAVE_API_KEY;
+  if (key) return searchBrave(query, key);
   const url = new URL(ENDPOINT);
   url.searchParams.set("q", query);
   url.searchParams.set("format", "rss");

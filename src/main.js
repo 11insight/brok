@@ -15,6 +15,7 @@ import { commands, filteredCommands } from "./ui/commands.js";
 import { buzz, toast } from "./ui/toast.js";
 import { cleanUrl } from "./sidecar/clean-url.js";
 import { PRESETS, forgetOwnModel, listModels, saveOwnModel } from "./sidecar/own-model.js";
+import { finishXSignIn, isXCallback, signOutX, startXSignIn, xPostsFor, xSession } from "./sidecar/x-auth.js";
 import { fillShell, mountSplit, shellHtml, syncShell } from "./ui/shell.js";
 import { destroy as destroyWallet, handle as walletHandle, mount as mountWallet, submitWallet } from "./ui/wallet.js";
 
@@ -26,6 +27,9 @@ const state = {
   split: false,
   article: emptyArticle(),
   accounts: { grok: false, x: false, starlink: false },
+  config: { search: "", xClientId: "" },
+  xSession: xSession(),
+  xPosts: { status: "idle" },
   onDevice: true,
   ledgerOpen: false,
   ledgerTab: "blocked",
@@ -200,6 +204,7 @@ async function openPage(raw, { push = true } = {}) {
   const path = `/read#u=${encodeURIComponent(url)}`;
   if (push && location.pathname + location.hash !== path) history.pushState({ route: "browser" }, "", path);
   state.article = emptyArticle(url, "loading");
+  state.xPosts = { status: "idle" };
   state.split = false;
   if (state.route === "wallet") destroyWallet();
   state.route = "browser";
@@ -423,6 +428,32 @@ app.addEventListener("click", (event) => {
     sync();
     return;
   }
+  if (action === "x-signin") {
+    if (!state.config.xClientId) return;
+    ledger.add({
+      id: `x-signin-${Date.now()}`,
+      klass: "low",
+      kind: "Sign in",
+      host: "x.com",
+      result: "allowed",
+      detail: "Your browser went to X to sign in. Brok never sees your password.",
+    });
+    startXSignIn(state.config.xClientId);
+    return;
+  }
+  if (action === "x-signout") {
+    signOutX().then(() => {
+      state.xSession = null;
+      state.xPosts = { status: "idle" };
+      sync();
+      toast("Signed out of X.");
+    });
+    return;
+  }
+  if (action === "x-posts") {
+    loadXPosts();
+    return;
+  }
   if (action === "model-mode") {
     state.modelMode = target.dataset.mode;
     if (state.modelMode === "brok") {
@@ -513,6 +544,37 @@ app.addEventListener("submit", (event) => {
   event.preventDefault();
   submitWallet(form);
 });
+
+async function loadXPosts() {
+  const article = state.article;
+  if (!article.url || state.xPosts.status === "loading") return;
+  state.xPosts = { status: "loading" };
+  sync();
+  const result = await xPostsFor(article.url);
+  ledger.add({
+    id: `x-posts-${Date.now()}`,
+    klass: "medium",
+    kind: "Posts on X",
+    host: "Brok's server, then api.x.com",
+    result: "allowed",
+    detail: "Your X sign-in and this page address, to find posts that link to it. Brok keeps neither.",
+  });
+  if (state.article !== article) return;
+  state.xSession = xSession();
+  state.xPosts = result;
+  if (result.status === "error") toast(result.error);
+  sync();
+}
+
+async function loadConfig() {
+  try {
+    const res = await fetch("/api/config", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    if (res.ok) state.config = await res.json();
+  } catch {
+    // Offline. X sign-in stays hidden.
+  }
+  sync();
+}
 
 function readModelForm() {
   const form = document.getElementById("model-form");
@@ -663,6 +725,7 @@ async function runSearch(query) {
   state.search = { query, status: "loading", results: [], error: "" };
   sync();
   let failed = false;
+  let engine = "the search engine";
   try {
     const response = await fetch("/api/search", {
       method: "POST",
@@ -672,11 +735,12 @@ async function runSearch(query) {
     const data = await response.json().catch(() => ({}));
     if (token !== searchToken) return;
     if (!response.ok) failed = true;
+    if (data.source) engine = data.source;
     state.search = {
       query,
       status: failed ? "error" : "done",
       results: failed ? [] : data.results || [],
-      error: failed ? "Search failed." : "",
+      error: failed ? data.error || "Search failed." : "",
     };
   } catch {
     if (token !== searchToken) return;
@@ -687,9 +751,9 @@ async function runSearch(query) {
     id: `search-${token}`,
     klass: "medium",
     kind: "Search",
-    host: "Brok's server, then bing.com",
+    host: `Brok's server, then ${engine}`,
     result: "allowed",
-    detail: `"${query.slice(0, 80)}". Bing saw Brok's server, not you.${failed ? " No results came back." : ""}`,
+    detail: `"${query.slice(0, 80)}". ${engine} saw Brok's server, not you.${failed ? " No results came back." : ""}`,
   });
 }
 
@@ -701,10 +765,26 @@ app.addEventListener("submit", (event) => {
   runSearch(query);
 });
 
+const backFromX = isXCallback();
+if (backFromX) {
+  finishXSignIn().then((result) => {
+    state.xSession = xSession();
+    toast(result.ok ? `Signed in to X as @${result.username}.` : result.error);
+    const start = routeFromPath(location.pathname);
+    if (pageParam()) {
+      openPage(pageParam(), { push: false });
+      if (start === "original") go("original");
+    } else {
+      sync();
+    }
+  });
+}
+loadConfig();
+
 state.route = routeFromPath(location.pathname);
 if (state.route === "wallet") paintWallet();
 else paintShell();
-if (state.route !== "wallet" && pageParam()) {
+if (!backFromX && state.route !== "wallet" && pageParam()) {
   const start = state.route;
   openPage(pageParam(), { push: false });
   if (start === "original") go("original");
