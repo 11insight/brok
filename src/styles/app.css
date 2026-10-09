@@ -396,7 +396,7 @@ a:hover { color: var(--white); }
   gap: var(--s-3);
   width: min(720px, 100%);
   height: var(--ctl-lg);
-  padding: 0 var(--s-2) 0 var(--s-4);
+  padding: 0 6px 0 var(--s-4);
   border-radius: var(--r-container);
   background: var(--glass-1);
   -webkit-backdrop-filter: var(--glass-1-blur);
@@ -426,15 +426,20 @@ a:hover { color: var(--white); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  height: calc(100% - 12px);
+  aspect-ratio: 1;
   flex: none;
-  border-radius: var(--r-control);
-  background: var(--white);
-  color: #0a0a0d;
-  transition: transform var(--t-quick), opacity var(--t-quick);
+  /* Same glass as the box, nested 6px in. A square corner cap keeps it from reading as a circle. */
+  border-radius: 12px;
+  background: rgba(var(--white-rgb), 0.1);
+  -webkit-backdrop-filter: var(--glass-1-blur);
+  backdrop-filter: var(--glass-1-blur);
+  border: 1px solid var(--glass-1-edge);
+  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.22), inset 0 -1px 1px rgba(var(--white-rgb), 0.06), 0 4px 12px -6px rgba(0, 0, 0, 0.5);
+  color: var(--ink-strong);
+  transition: background var(--t-quick), transform 0.15s;
 }
-.field-search .go:hover { transform: scale(1.04); }
+.field-search .go:hover { background: rgba(var(--white-rgb), 0.16); color: var(--white); }
 .field-search .go:active { transform: scale(0.96); }
 .search .fine { width: min(720px, 100%); margin-top: var(--s-3); text-align: center; }
 .search.has-results .fine { display: none; }
