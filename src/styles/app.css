@@ -369,7 +369,7 @@ a:hover { color: var(--white); }
   margin-bottom: var(--s-8);
   color: var(--ink-strong);
 }
-.hero .brand-mark { width: 128px; height: 128px; filter: drop-shadow(0 0 24px rgba(var(--indigo-rgb), 0.55)); }
+.hero .brand-mark { width: 128px; height: 128px; }
 .wordmark {
   font-family: var(--font-display);
   font-size: var(--t-hero);
