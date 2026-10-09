@@ -2,7 +2,7 @@ import { starlinkFixture } from "../fixtures/accounts.js";
 import { quotesFor } from "../fixtures/ticker.js";
 import { columnsHtml, fillPosts, originalHtml, singleHtml } from "./article-html.js";
 import { esc } from "./dom.js";
-import { arrowIcon, brandMark, gearIcon, searchIcon } from "./icons.js";
+import { arrowIcon, brandMarkHtml, gearIcon, searchIcon } from "./icons.js";
 import { blockedCount, commandHtml, drawerHtml, securityHtml, settingsHtml, shelfHtml, signinHtml, xRailHtml } from "./overlays.js";
 
 function resultsHtml(search) {
@@ -57,7 +57,7 @@ export function shellHtml(article) {
   return `<div class="window" data-route="browser">
     <div class="chrome">
       <div class="toolbar">
-        <button type="button" class="brand" data-action="go" data-route="search" aria-label="Brok home">${brandMark}<span>Brok</span><small class="brand-tag">a browser powered by grok</small></button>
+        <button type="button" class="brand" data-action="go" data-route="search" aria-label="Brok home">${brandMarkHtml()}<span>Brok</span><small class="brand-tag">a browser powered by grok</small></button>
         <p class="omnibox"></p>
         <nav class="tools" aria-label="Tools">
           <button type="button" class="tool" data-action="open-ledger"><span class="count" data-blocked>0</span><span class="tool-word">Blocked</span></button>
@@ -82,7 +82,7 @@ export function shellHtml(article) {
     <div class="body">
       <div class="stage">
         <form class="search" id="search">
-          <div class="hero" aria-hidden="true">${brandMark}</div>
+          <div class="hero" aria-hidden="true">${brandMarkHtml()}</div>
           <label for="q">Search</label>
           <div class="field-search">
             ${searchIcon}

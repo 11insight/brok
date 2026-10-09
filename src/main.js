@@ -13,6 +13,7 @@ import { readSplit, writeSplit } from "./sidecar/split-memory.js";
 import { fillPosts } from "./ui/article-html.js";
 import { commands, filteredCommands } from "./ui/commands.js";
 import { buzz, toast } from "./ui/toast.js";
+import { createCharacter } from "./ui/character.js";
 import { cleanUrl } from "./sidecar/clean-url.js";
 import { PRESETS, forgetOwnModel, listModels, saveOwnModel } from "./sidecar/own-model.js";
 import { finishXSignIn, isXCallback, signOutX, startXSignIn, xPostsFor, xSession } from "./sidecar/x-auth.js";
@@ -74,12 +75,37 @@ function watchChrome() {
   chrome.dataset.watched = "1";
 }
 
+// The big Brok on the search page, and the small one in the top bar.
+let brok = null;
+let brokMini = null;
+
+function mountCharacters() {
+  brok?.stop();
+  brokMini?.stop();
+  const big = app.querySelector(".hero .brok-char");
+  const small = app.querySelector(".brand .brok-char");
+  brok = big ? createCharacter(big) : null;
+  brokMini = small ? createCharacter(small) : null;
+}
+
+// A win: the big Brok spins if you can see it, otherwise the small one does.
+function celebrate() {
+  if (state.route === "search" && brok) brok.spin();
+  else brokMini?.spin();
+}
+
+function wiggle() {
+  if (state.route === "search" && brok) brok.wiggle();
+  else brokMini?.wiggle();
+}
+
 function paintShell() {
   app.innerHTML = shellHtml(state.article);
   fillShell(app, state.article, posts);
   mountSplit(app, state.split);
   fillPosts(app, posts, state.article.published, state.accounts.x);
   watchChrome();
+  mountCharacters();
   sync();
 }
 
@@ -215,6 +241,7 @@ async function openPage(raw, { push = true } = {}) {
   const article = await loadArticle(url);
   if (token !== pageToken) return;
   state.article = article;
+  if (article.status === "done") celebrate();
   state.split = article.status === "done" && readSplit(article.id);
   mountSplit(app, state.split);
   let host = "";
@@ -262,6 +289,7 @@ async function runSplit() {
   if (state.article !== article) return;
   buzz(30);
   toast(result.status === "done" ? "Split done." : result.error || "The split failed.");
+  if (result.status === "done") celebrate();
   if (result.status === "done") {
     article.panes.fact.items = result.fact;
     article.panes.opinion.items = result.opinion;
@@ -626,6 +654,56 @@ app.addEventListener("submit", (event) => {
   refill();
   buzz(8);
   toast(`Splits now go straight to ${new URL(saved.endpoint).host}.`);
+  wiggle();
+});
+
+// Brok watches the search box: eyes on the cursor while you type, a squint
+// when you pause to think it over.
+let typingTimer = 0;
+let measure = null;
+
+function caretPoint(input) {
+  measure = measure || document.createElement("canvas").getContext("2d");
+  const style = getComputedStyle(input);
+  measure.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const before = input.value.slice(0, input.selectionStart ?? input.value.length);
+  const box = input.getBoundingClientRect();
+  const x = box.left + parseFloat(style.paddingLeft) + measure.measureText(before).width - input.scrollLeft;
+  return { x: Math.min(box.right, x), y: box.top + box.height / 2 };
+}
+
+function watchTyping(input) {
+  if (!brok || state.route !== "search") return;
+  const point = caretPoint(input);
+  brok.lookAt(point.x, point.y);
+  brok.squint(false);
+  window.clearTimeout(typingTimer);
+  if (input.value.trim().length >= 3) {
+    typingTimer = window.setTimeout(() => brok?.squint(true), 900);
+  }
+}
+
+app.addEventListener("input", (event) => {
+  if (event.target?.id === "q") watchTyping(event.target);
+});
+app.addEventListener("keyup", (event) => {
+  if (event.target?.id === "q" && /Arrow|Home|End/.test(event.key)) watchTyping(event.target);
+});
+app.addEventListener("focusin", (event) => {
+  if (event.target?.id === "q") watchTyping(event.target);
+});
+app.addEventListener("focusout", (event) => {
+  if (event.target?.id !== "q") return;
+  window.clearTimeout(typingTimer);
+  if (state.search.status !== "loading") brok?.squint(false);
+  brok?.rest();
+});
+app.addEventListener("click", (event) => {
+  if (event.target.closest?.(".hero .brok-char")) {
+    buzz(5);
+    if (Math.random() < 0.35) brok?.spin();
+    else brok?.wiggle();
+  }
 });
 
 app.addEventListener("input", (event) => {
@@ -726,6 +804,8 @@ async function runSearch(query) {
   sync();
   let failed = false;
   let engine = "the search engine";
+  window.clearTimeout(typingTimer);
+  brok?.squint(true);
   try {
     const response = await fetch("/api/search", {
       method: "POST",
@@ -736,6 +816,9 @@ async function runSearch(query) {
     if (token !== searchToken) return;
     if (!response.ok) failed = true;
     if (data.source) engine = data.source;
+    brok?.squint(false);
+    if (response.ok && (data.results || []).length) celebrate();
+    else wiggle();
     state.search = {
       query,
       status: failed ? "error" : "done",
@@ -745,6 +828,7 @@ async function runSearch(query) {
   } catch {
     if (token !== searchToken) return;
     failed = true;
+    brok?.squint(false);
     state.search = { query, status: "error", results: [], error: "Search failed." };
   }
   ledger.add({
@@ -770,6 +854,7 @@ if (backFromX) {
   finishXSignIn().then((result) => {
     state.xSession = xSession();
     toast(result.ok ? `Signed in to X as @${result.username}.` : result.error);
+    if (result.ok) celebrate();
     const start = routeFromPath(location.pathname);
     if (pageParam()) {
       openPage(pageParam(), { push: false });

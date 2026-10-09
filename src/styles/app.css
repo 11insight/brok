@@ -369,7 +369,7 @@ a:hover { color: var(--white); }
   margin-bottom: var(--s-8);
   color: var(--ink-strong);
 }
-.hero .brand-mark { width: 128px; height: 128px; }
+.hero .brand-mark { width: 128px; height: 128px; transition: width 0.4s cubic-bezier(.2,.9,.25,1), height 0.4s cubic-bezier(.2,.9,.25,1); }
 .wordmark {
   font-family: var(--font-display);
   font-size: var(--t-hero);
@@ -379,7 +379,8 @@ a:hover { color: var(--white); }
   margin: 0;
 }
 .tagline { margin-top: calc(var(--s-2) * -1); color: var(--ink-dim); font-size: 17px; }
-.search.has-results .hero { display: none; }
+.search.has-results .hero { margin-bottom: var(--s-4); }
+.search.has-results .hero .brand-mark { width: 64px; height: 64px; }
 
 .search label {
   position: absolute;
@@ -1164,3 +1165,14 @@ button.official { cursor: pointer; }
 .post-link { color: var(--ink-dim); font-size: var(--t-small); }
 .post-link:hover { color: var(--white); }
 .rail-body > .fine { margin-top: var(--s-2); }
+
+/* Brok, the character. */
+.brok-char { overflow: visible; }
+.brok-char .eye-lid rect { fill: var(--ink-ground); }
+.brok-char .eye-lid { transform-box: fill-box; transform-origin: center; transition: transform 0.25s ease; }
+.brok-char .char-eyes { transition: transform 0.45s cubic-bezier(.2,.9,.25,1); }
+.hero .brok-char { cursor: pointer; }
+.hero { pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .brok-char .eye-lid, .brok-char .char-eyes { transition: none; }
+}
